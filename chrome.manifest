@@ -1,0 +1,2 @@
+content	nc4migrator	jar:chrome/nc4migrator.jar!/content/nc4migrator/
+locale	nc4migrator	ja	jar:chrome/nc4migrator.jar!/locale/ja/nc4migrator/

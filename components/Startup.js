@@ -114,13 +114,44 @@ StartupService.prototype = {
  
 	migratePrefsFrom : function(aFile) 
 	{
-		var contents = this.readFrom(aFile, 'Shift_JIS');
 		var self = this;
-		var sandbox = {
-			user_pref : function(aKey, aValue) {
+		var setPref = function(aKey, aValue) {
+				if (typeof aValue == 'number' && isNaN(aValue)) return;
 				self.setPref(aKey, aValue);
-			}
+			};
+		var sandbox = {
+			user_pref : setPref,
+			pref : setPref,
+			defaultPref : setPref,
+			lockPref : setPref,
+			get PrefConfig() {
+				return this;
+			},
+			get SecurityConfig() {
+				return this;
+			},
+			config : function() {}
 		};
+
+		var autoConfig = this.netscape4;
+		if (autoConfig && autoConfig.exists()) {
+			autoConfig = autoConfig.parent;
+			autoConfig.append('netscape.cfg');
+			if (autoConfig.exists()) {
+				var encoded = this.readFrom(autoConfig, 'raw');
+				var decoded = encoded
+						.split('')
+						.map(function(aChar) {
+							return String.fromCharCode(
+								aChar.charCodeAt(0) - 7
+							);
+						})
+						.join('');
+				eval(decoded, sandbox);
+			}
+		}
+
+		var contents = this.readFrom(aFile, 'Shift_JIS');
 		eval(contents, sandbox);
 
 		var mailDir = this.getPref('mail.directory');
@@ -239,11 +270,39 @@ StartupService.prototype = {
 			this._netscape = this.getFileFromPath(path);
 		}
 		catch(e) {
-			this.alert('error', e);
+//			this.alert('error', e);
 		}
 		return this._netscape;
 	},
 	_netscape : null,
+	get netscape4() 
+	{
+		if (this._netscape4) return this._netscape4;
+		try {
+			var nsKey = Components
+					.classes['@mozilla.org/windows-registry-key;1']
+					.createInstance(Components.interfaces.nsIWindowsRegKey);
+			nsKey.open(
+				nsKey.ROOT_KEY_LOCAL_MACHINE,
+				'SOFTWARE\\Netscape\\Netscape Navigator',
+				nsKey.ACCESS_READ
+			);
+			var version = nsKey.readStringValue('CurrentVersion');
+			var curVerKey = nsKey.openChild(version+'\\Main', nsKey.ACCESS_READ);
+			var path = curVerKey.readStringValue('Install Directory');
+			curVerKey.close();
+			nsKey.close();
+
+			this._netscape4 = this.getFileFromPath(path);
+			this._netscape4.append('Program');
+			this._netscape4.append('netscape.exe');
+		}
+		catch(e) {
+//			this.alert('error', e);
+		}
+		return this._netscape4;
+	},
+	_netscape4 : null,
 
 	 
 	get isNsutilsInstalled() 
@@ -290,15 +349,26 @@ StartupService.prototype = {
 				.createInstance(Components.interfaces.nsIFileInputStream);
 		try {
 			stream.init(aFile, 1, 0, false); // open as "read only"
-			var converterStream = Components
-					.classes['@mozilla.org/intl/converter-input-stream;1']
-					.createInstance(Components.interfaces.nsIConverterInputStream);
-			converterStream.init(stream, aEncoding || 'UTF-8', stream.available(),
-				converterStream.DEFAULT_REPLACEMENT_CHARACTER);
-			var out = {};
-			converterStream.readString(stream.available(), out);
-			fileContents = out.value;
-			converterStream.close();
+			if (aEncoding == 'raw') {
+				var scriptableStream = Components
+						.classes['@mozilla.org/scriptableinputstream;1']
+						.createInstance(Components.interfaces.nsIScriptableInputStream);
+				scriptableStream.init(stream);
+				var fileSize = scriptableStream.available();
+				fileContents = scriptableStream.read(fileSize);
+				scriptableStream.close();
+			}
+			else {
+				var converterStream = Components
+						.classes['@mozilla.org/intl/converter-input-stream;1']
+						.createInstance(Components.interfaces.nsIConverterInputStream);
+				converterStream.init(stream, aEncoding || 'UTF-8', stream.available(),
+					converterStream.DEFAULT_REPLACEMENT_CHARACTER);
+				var out = {};
+				converterStream.readString(stream.available(), out);
+				fileContents = out.value;
+				converterStream.close();
+			}
 			stream.close();
 		}
 		catch(e) {

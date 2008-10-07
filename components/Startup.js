@@ -75,7 +75,7 @@ StartupService.prototype = {
 			);
 			return;
 		}
-		this.migratePrefsFrom(pref);
+		this.migratePrefsFrom(pref, profile);
 
 		this.migrateAddressBooks(profile);
 
@@ -112,7 +112,7 @@ StartupService.prototype = {
 		return null;
 	},
  
-	migratePrefsFrom : function(aFile) 
+	migratePrefsFrom : function(aFile, aProfile) 
 	{
 		var self = this;
 		var setPref = function(aKey, aValue) {
@@ -155,12 +155,19 @@ StartupService.prototype = {
 		eval(contents, sandbox);
 
 		var mailDir = this.getPref('mail.directory');
-		if (mailDir) this.clearPref(mailDir);
+		if (mailDir) {
+			this.clearPref(mailDir);
+		}
+		else {
+			mailDir = this.getFileFromPath(aProfile.path);
+			mailDir.append('Mail');
+			mailDir = mailDir.exists() ? mailDir.path : '' ;
+		}
 
 		this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', (function() { return this; })());
 		verifyAccounts();
 
-		if (mailDir) {
+		if (mailDir && this.getPref('extensions.nc4migrator.shareOldMailbox')) {
 			var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');
 			this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
 			this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
@@ -219,7 +226,7 @@ StartupService.prototype = {
 		}
 		if (!targets.length) return;
 
-		var importAsHomeAddress = Pref.getBoolPref('extensions.nc4migrator.addressbook.importAsHomeAddress');
+		var importAsHomeAddress = this.getPref('extensions.nc4migrator.addressbook.importAsHomeAddress');
 
 		var addressBook = Components
 				.classes['@mozilla.org/addressbook;1']

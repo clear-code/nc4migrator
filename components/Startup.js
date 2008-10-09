@@ -156,7 +156,7 @@ StartupService.prototype = {
 
 		var mailDir = this.getPref('mail.directory');
 		if (mailDir) {
-			this.clearPref(mailDir);
+			this.clearPref('mail.directory');
 		}
 		else {
 			mailDir = this.getFileFromPath(aProfile.path);
@@ -167,11 +167,29 @@ StartupService.prototype = {
 		this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', (function() { return this; })());
 		verifyAccounts();
 
-		if (mailDir && this.getPref('extensions.nc4migrator.shareOldMailbox')) {
-			var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');
-			this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
-			this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
-			this.wantsRestart = true; // 再起動後でないとフォルダの変更が反映されない
+		if (mailDir) {
+			if (this.getPref('extensions.nc4migrator.shareOldMailbox')) {
+				var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');
+				this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
+				this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
+				this.wantsRestart = true; // 再起動後でないとフォルダの変更が反映されない
+			}
+			else {
+				var bag = Components
+						.classes['@mozilla.org/hash-property-bag;1']
+						.createInstance(Components.interfaces.nsIWritablePropertyBag);
+				bag.setProperty('mailDir', mailDir);
+				var WindowWatcher = Components
+					.classes['@mozilla.org/embedcomp/window-watcher;1']
+					.getService(Components.interfaces.nsIWindowWatcher);
+				WindowWatcher.openWindow(
+					null,
+					'chrome://nc4migrator/content/migration.xul',
+					'nc4migrator:mailmigration',
+					'chrome,dialog,modal,dependent',
+					bag
+				);
+			}
 		}
 	},
  

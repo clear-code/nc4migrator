@@ -6,3 +6,4 @@
    pref("extensions.nc4migrator.override.mail.server.*.empty_trash_on_exit", true);
    としておくと、移行前の設定がどうであったかに関わらず、すべての受信サーバで
    ごみ箱を自動的に空にするようになります。
+   値を文字列で「[[CLEAR]]」としておくと、その名前のユーザ設定の値を削除します。

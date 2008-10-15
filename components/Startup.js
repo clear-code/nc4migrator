@@ -167,6 +167,29 @@ StartupService.prototype = {
 		this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', (function() { return this; })());
 		verifyAccounts();
 
+		var prefix = 'extensions.nc4migrator.override.';
+		Pref.getChildList(prefix, {}).forEach(function(aPref) {
+			var key = aPref.replace(prefix, '');
+			var value = this.getPref(aPref);
+			var shouldClear = (value == '[[CLEAR]]');
+			if (key.indexOf('*') > -1) {
+				var regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
+				Pref.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
+					if (!regexp.test(aPref)) return;
+					if (shouldClear)
+						this.clearPref(aPref);
+					else
+						this.setPref(aPref, value);
+				}, this);
+			}
+			else {
+				if (shouldClear)
+					this.clearPref(key);
+				else
+					this.setPref(key, value);
+			}
+		}, this);
+
 		if (mailDir) {
 			if (this.getPref('extensions.nc4migrator.shareOldMailbox')) {
 				var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');

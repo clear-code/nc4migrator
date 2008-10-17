@@ -50,11 +50,21 @@ StartupService.prototype = {
 		var username = Components
 				.classes['@mozilla.org/process/environment;1']
 				.getService(Components.interfaces.nsIEnvironment)
-				.get('username')
-				.toLowerCase();
+				.get('username');
+
+		var ignoreCase = this.getPref('extensions.nc4migrator.profileDetection.ignoreCase');
+		if (ignoreCase) username = username.toLowerCase();
+
+		var ignoreChars = this.getPref('extensions.nc4migrator.profileDetection.ignoreChars');
+		ignoreChars = ignoreChars ? new RegExp('['+ignoreChars.replace(/([\[\]\^\-])/g, '\\$1')+']+', 'g') : null ;
+		if (ignoreChars) username = username.replace(ignoreChars, '');
+
 		var profile;
 		profiles.some(function(aProfile) {
-			if (aProfile.name.toLowerCase() != username)
+			var name = aProfile.name;
+			if (ignoreCase) name = name.toLowerCase();
+			if (ignoreChars) name = name.replace(ignoreChars, '');
+			if (name != username)
 				return false;
 			profile = aProfile;
 			return true;

@@ -7,8 +7,17 @@
     http://mxr.mozilla.org/mozilla1.8/source/modules/libreg/src/reg.h)
 */
 
+function log(aMessage)
+{
+	Components 
+		.classes['@mozilla.org/observer-service;1']
+		.getService(Components.interfaces.nsIObserverService)
+		.notifyObservers(null, 'log', '[nsreg] '+aMessage);
+}
+
 function getProfiles() 
 {
+log('getProfiles');
 	try {
 		const DirectoryService = Components
 				.classes['@mozilla.org/file/directory_service;1']
@@ -16,17 +25,21 @@ function getProfiles()
 		var file = DirectoryService.get('WinD', Components.interfaces.nsIFile);
 		file.append('nsreg.dat');
 		if (file.exists()) {
+log('nsreg.dat exists');
 			var array = readBinaryFrom(file);
 			return getProfilesFromBinary(array);
 		}
 	}
 	catch(e) {
+log(e);
 	}
+log('no profile is found');
 	return [];
 }
 
 function getProfilesFromBinary(aByteArray) 
 {
+log('getProfilesFromBinary');
 	var string = '';
 	var octet;
 	for (var i in aByteArray)
@@ -83,11 +96,13 @@ function getProfilesFromBinary(aByteArray)
 		string = string.substring(string.indexOf('\n', current));
 		from = 0;
 	}
+log(profiles.length+' profiles found from the registory');
 	return profiles;
 }
 
 function readBinaryFrom(aFile) 
 {
+log('readBinaryFrom');
 	var fileStream = Components
 			.classes['@mozilla.org/network/file-input-stream;1']
 			.createInstance(Components.interfaces.nsIFileInputStream);
@@ -99,5 +114,6 @@ function readBinaryFrom(aFile)
 	var array = binaryStream.readByteArray(fileStream.available());
 	binaryStream.close();
 	fileStream.close();
+log('data size: '+array.length+' bytes');
 	return array;
 }

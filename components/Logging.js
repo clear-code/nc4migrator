@@ -28,7 +28,16 @@ LoggingService.prototype = {
 
 				this.log('');
 				this.log('===========================START===========================');
+				var date = new Date();
+				this.log(
+					date.getFullYear()+
+					'.'+
+					this.fillWithZero(date.getMonth()+1, 2)+
+					'.'+
+					this.fillWithZero(date.getDate(), 2)
+					);
 				this.logWithDate('LoggingService starts');
+
 				return;
 
 			case 'quit-application':
@@ -40,7 +49,7 @@ LoggingService.prototype = {
 				return;
 
 			case 'log':
-				this.logWithDate(aData);
+				this.logWithDate((aSubject ? aSubject+' ' : '')+aData);
 				break;
 		}
 	},
@@ -50,13 +59,6 @@ LoggingService.prototype = {
 	logWithDate : function(aMessage) 
 	{
 		var output = [];
-		var date = new Date();
-		output.push(date.getFullYear());
-		output.push('.');
-		output.push(this.fillWithZero(date.getMonth()+1, 2));
-		output.push('.');
-		output.push(this.fillWithZero(date.getDate(), 2));
-		output.push(' ');
 		output.push(this.fillWithZero(date.getHours(), 2));
 		output.push(':');
 		output.push(this.fillWithZero(date.getMinutes(), 2));

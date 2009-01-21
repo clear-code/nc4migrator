@@ -1,3 +1,12 @@
+function log(aMessage)
+{
+	Components 
+		.classes['@mozilla.org/observer-service;1']
+		.getService(Components.interfaces.nsIObserverService)
+		.notifyObservers(null, 'log', '[migration] '+aMessage);
+}
+log('migration start');
+
 var mailDir = window.arguments[0]
 		.QueryInterface(Components.interfaces.nsIPropertyBag)
 		.getProperty('mailDir');
@@ -34,16 +43,22 @@ var error = Components
 
 function doImport(aImporter, aThirdArg)
 {
+log('doImport');
 	if (aImporter.WantsProgress()) {
+log('progressive');
 		if (aImporter.BeginImport(success, error, aThirdArg)) {
+log('start');
 			timer = window.setInterval(checkGoNext, 100, aImporter);
 		}
 		else {
+log('finish');
 			shouldGoNext = true;
 		}
 	}
 	else {
+log('not progressive');
 		aImporter.BeginImport(success, error, aThirdArg);
+log('finish');
 		shouldGoNext = true;
 	}
 }
@@ -59,11 +74,13 @@ function checkGoNext(aImporter)
 
 function importerGenerator()
 {
+log('importerGenerator');
 	var importer = gModule
 		.GetImportInterface('mail')
 		.QueryInterface(Components.interfaces.nsIImportGeneric);
 	shouldGoNext = false;
 
+log('importer:'+importer);
 	importer.SetData('mailLocation', source);
 
 	window.setTimeout(doImport, 0, importer);
@@ -71,6 +88,7 @@ function importerGenerator()
 	{
 		yield;
 	}
+log('importerGenerator:finish');
 }
 
 

@@ -6,6 +6,11 @@ const Pref = Components
 		.classes['@mozilla.org/preferences;1']
 		.getService(Components.interfaces.nsIPrefBranch)
 		.QueryInterface(Components.interfaces.nsIPrefBranch2);
+
+function log(aMessage)
+{
+	ObserverService.notifyObservers(null, 'log', '[nc4migrator] '+aMessage);
+}
  
 function StartupService() { 
 }
@@ -31,13 +36,17 @@ StartupService.prototype = {
  
 	checkAutoMigration : function() 
 	{
-		if (this.getPref('mailnews.quotingPrefs.version'))
+log('checkAutoMigration');
+		if (this.getPref('mailnews.quotingPrefs.version')) {
+log('migration is already done');
 			return;
+		}
 		this.migrateProfile();
 	},
  
 	migrateProfile : function() 
 	{
+log('start migration');
 		var profiles = this.nsreg.getProfiles();
 		if (!profiles.length) {
 			this.alert(

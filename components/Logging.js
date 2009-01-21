@@ -59,6 +59,7 @@ LoggingService.prototype = {
 	logWithDate : function(aMessage) 
 	{
 		var output = [];
+		var date = new Date();
 		output.push(this.fillWithZero(date.getHours(), 2));
 		output.push(':');
 		output.push(this.fillWithZero(date.getMinutes(), 2));

@@ -5,6 +5,9 @@ const ObserverService = Components
 function LoggingService() { 
 }
 LoggingService.prototype = {
+
+	disabled : true,
+
 	kCID  : Components.ID('{e6f309e0-e76a-11dd-ba2f-0800200c9a66}'),
 	kID   : '@clear-code.com/logging/server;1',
 	kNAME : 'Logging Service',
@@ -19,6 +22,10 @@ LoggingService.prototype = {
 					.getService(Components.interfaces.nsIProperties)
 					.get('CurProcD', Components.interfaces.nsIFile);
 				this.logFile.append('log.txt');
+				if (!this.disabled) {
+					if (this.logFile.exists()) this.logFile.remove(true);
+					return;
+				}
 				if (!this.logFile.exists()) {
 					this.logFile.create(this.logFile.NORMAL_FILE_TYPE, 0666);
 				}

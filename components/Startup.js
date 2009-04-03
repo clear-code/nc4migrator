@@ -36,9 +36,9 @@ StartupService.prototype = {
  
 	checkAutoMigration : function() 
 	{
-log('checkAutoMigration');
+		log('checkAutoMigration');
 		if (this.getPref('mailnews.quotingPrefs.version')) {
-log('migration is already done');
+			log('migration is already done');
 			return;
 		}
 		this.migrateProfile();
@@ -46,10 +46,10 @@ log('migration is already done');
  
 	migrateProfile : function() 
 	{
-log('start migration');
+		log('start migration');
 		var profiles = this.nsreg.getProfiles();
 		if (!profiles.length) {
-log('no profile alert');
+			log('no profile alert');
 			this.alert(
 				this.getString('profilesNotFound_title'),
 				this.getString('profilesNotFound_text')
@@ -61,7 +61,7 @@ log('no profile alert');
 				.classes['@mozilla.org/process/environment;1']
 				.getService(Components.interfaces.nsIEnvironment)
 				.get('username');
-log('username is '+username);
+		log('username is '+username);
 
 		var ignoreCase = this.getPref('extensions.nc4migrator.profileDetection.ignoreCase');
 		if (ignoreCase) username = username.toLowerCase();
@@ -69,38 +69,38 @@ log('username is '+username);
 		var ignoreChars = this.getPref('extensions.nc4migrator.profileDetection.ignoreChars');
 		ignoreChars = ignoreChars ? new RegExp('['+ignoreChars.replace(/([\[\]\^\-])/g, '\\$1')+']+', 'g') : null ;
 		if (ignoreChars) username = username.replace(ignoreChars, '');
-log('conditions: ignoreCase='+ignoreCase+', ignoreChars="'+ignoreChars+'"');
+		log('conditions: ignoreCase='+ignoreCase+', ignoreChars="'+ignoreChars+'"');
 
 		var profile;
 		profiles.some(function(aProfile) {
 			var name = aProfile.name;
 			if (ignoreCase) name = name.toLowerCase();
 			if (ignoreChars) name = name.replace(ignoreChars, '');
-log('compare: '+name+'('+aProfile.name+') vs '+username);
+			log('compare: '+name+'('+aProfile.name+') vs '+username);
 			if (name != username) {
 				return false;
 			}
 			profile = aProfile;
-log('auto detection: '+profile.name+' / '+profile.path);
+			log('auto detection: '+profile.name+' / '+profile.path);
 			return true;
 		}, this);
 
 		if (!profile) {
-log('auto detection failed');
+			log('auto detection failed');
 			profile = this.selectProfile(profiles);
-if (profile) log('manual detection: '+profile.name+' / '+profile.path);
+			if (profile) log('manual detection: '+profile.name+' / '+profile.path);
 		}
 
 		if (!profile) {
-log('no profile found');
+			log('no profile found');
 			return;
 		}
 
 		var pref = this.getFileFromPath(profile.path);
 		pref.append('prefs.js');
-log('prefs.js: '+pref.path);
+		log('prefs.js: '+pref.path);
 		if (!pref.exists()) {
-log('prefs.js doesn\'t exist');
+			log('prefs.js doesn\'t exist');
 			this.alert(
 				this.getString('prefsMigrationFailed_title'),
 				this.getString('prefsMigrationFailed_text')
@@ -127,7 +127,7 @@ log('prefs.js doesn\'t exist');
  
 	selectProfile : function(aProfiles) 
 	{
-log('selectProfile');
+		log('selectProfile');
 		var selectedProfile = { value : 0 };
 		if (!this.PromptService.select(
 				null,
@@ -137,23 +137,23 @@ log('selectProfile');
 				aProfiles.map(function(aProfile) { return aProfile.name; }),
 				selectedProfile
 			)) {
-log('no profile is selected');
+			log('no profile is selected');
 			return null;
 		}
 
-log('selected profile is '+selectedProfile.value);
+		log('selected profile is '+selectedProfile.value);
 		if (selectedProfile.value in aProfiles) {
-log(selectedProfile.value+' exists in the list');
+			log(selectedProfile.value+' exists in the list');
 			return aProfiles[selectedProfile.value];
 		}
 
-log('invalid profile is selected');
+		log('invalid profile is selected');
 		return null;
 	},
  
 	migratePrefsFrom : function(aFile, aProfile) 
 	{
-log('migratePrefsFrom');
+		log('migratePrefsFrom');
 		var self = this;
 		var setPref = function(aKey, aValue) {
 				if (typeof aValue == 'number' && isNaN(aValue)) return;
@@ -172,16 +172,16 @@ log('migratePrefsFrom');
 			},
 			config : function() {}
 		};
-log('sandbox setup complete');
+		log('sandbox setup complete');
 
 		var autoConfig = this.netscape4;
-log('autoConfig='+autoConfig);
+		log('autoConfig='+autoConfig);
 		if (autoConfig && autoConfig.exists()) {
 			autoConfig = autoConfig.parent;
 			autoConfig.append('netscape.cfg');
-log('autoConfig: '+autoConfig.path);
+			log('autoConfig: '+autoConfig.path);
 			if (autoConfig.exists()) {
-log('autoConfig exists');
+				log('autoConfig exists');
 				var encoded = this.readFrom(autoConfig, 'raw');
 				var decoded = encoded
 						.split('')
@@ -191,79 +191,81 @@ log('autoConfig exists');
 							);
 						})
 						.join('');
-log('loaded autoConfig:\n---------------------\n'+decoded+'\n---------------------');
+				log('loaded autoConfig:\n---------------------\n'+decoded+'\n---------------------');
 				eval(decoded, sandbox);
 			}
 		}
 
 		var contents = this.readFrom(aFile, 'Shift_JIS');
-log('loaded prefs:\n---------------------\n'+contents+'\n---------------------');
+		log('loaded prefs:\n---------------------\n'+contents+'\n---------------------');
 		eval(contents, sandbox);
 
 		var mailDir = this.getPref('mail.directory');
-log('mailDir='+mailDir);
+		log('mailDir='+mailDir);
 		if (mailDir) {
-log('clear preference');
+			log('clear preference');
 			this.clearPref('mail.directory');
 		}
 		else {
 			mailDir = this.getFileFromPath(aProfile.path);
 			mailDir.append('Mail');
 			mailDir = mailDir.exists() ? mailDir.path : '' ;
-log('autodetect: mailDir='+mailDir);
+			log('autodetect: mailDir='+mailDir);
 		}
 
-log('ready to verify accounts');
+		log('ready to verify accounts');
 		this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', (function() { return this; })());
 		verifyAccounts();
-log('verification complete');
+		log('verification complete');
+
+		this.upgradeSpecialFolders();
 
 		var prefix = 'extensions.nc4migrator.override.';
 		Pref.getChildList(prefix, {}).forEach(function(aPref) {
 			var key = aPref.replace(prefix, '');
 			var value = this.getPref(aPref);
 			var shouldClear = (value == '[[CLEAR]]');
-log('override: '+aPref+' = '+value);
+			log('override: '+aPref+' = '+value);
 			if (key.indexOf('*') > -1) {
-log('wildcard');
+				log('wildcard');
 				var regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
 				Pref.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
 					if (!regexp.test(aPref)) return;
 					if (shouldClear) {
-log('clear '+aPref);
+					log('clear '+aPref);
 						this.clearPref(aPref);
 					}
 					else {
-log('override '+aPref+' by '+value);
+						log('override '+aPref+' by '+value);
 						this.setPref(aPref, value);
 					}
 				}, this);
 			}
 			else {
 				if (shouldClear) {
-log('clear '+key);
+					log('clear '+key);
 					this.clearPref(key);
 				}
 				else {
-log('override '+key+' by '+value);
+					log('override '+key+' by '+value);
 					this.setPref(key, value);
 				}
 			}
 		}, this);
-log('override:complete');
+		log('override:complete');
 
 		if (mailDir) {
-log('mailDir resetting');
+			log('mailDir resetting');
 			if (this.getPref('extensions.nc4migrator.shareOldMailbox')) {
-log('mailDir is set to be shared!');
+				log('mailDir is set to be shared!');
 				var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');
-log('local folder server is '+localFolderServer);
+				log('local folder server is '+localFolderServer);
 				this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
 				this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
 				this.wantsRestart = true; // 再起動後でないとフォルダの変更が反映されない
 			}
 			else {
-log('mailDir should be migrated!');
+				log('mailDir should be migrated!');
 				var bag = Components
 						.classes['@mozilla.org/hash-property-bag;1']
 						.createInstance(Components.interfaces.nsIWritablePropertyBag);
@@ -271,7 +273,7 @@ log('mailDir should be migrated!');
 				var WindowWatcher = Components
 					.classes['@mozilla.org/embedcomp/window-watcher;1']
 					.getService(Components.interfaces.nsIWindowWatcher);
-log('start migration');
+				log('start migration');
 				WindowWatcher.openWindow(
 					null,
 					'chrome://nc4migrator/content/migration.xul',
@@ -283,9 +285,68 @@ log('start migration');
 		}
 	},
  
+	upgradeSpecialFolders : function() 
+	{
+		this.upgradeSpecialFolder(
+			'mail.default_drafts',
+			'mail.identity.*.draft_folder',
+			'mail.identity.*.drafts_folder_picker_mode',
+			'Drafts'
+		);
+		this.upgradeSpecialFolder(
+			'mail.default_templates',
+			'mail.identity.*.stationery_folder',
+			'mail.identity.*.tmpl_folder_picker_mode',
+			'Templates'
+		);
+		this.upgradeSpecialFolder(
+			'mail.default_drafts',
+			'mail.identity.*.fcc_folder',
+			'mail.identity.*.fcc_folder_picker_mode',
+			'Sent'
+		);
+	},
+	upgradeSpecialFolder : function(aOriginal, aTarget, aPicker, aFolder)
+	{
+		var orig = this.getPref(aOriginal);
+		if (orig.toLowerCase().indexOf('imap:') != 0) {
+			return;
+		}
+
+		orig = orig.replace(/^[^:]+:\/\//, '');
+		if (orig.toLowerCase().indexOf('local%20folder') == 0) {
+			return;
+		}
+
+		if (!/^[^\/@]+@[^\/]+/.test(orig)) {
+			orig = '*@'+orig;
+		}
+
+		var picker = '1';
+		if (!/^[^\/]+\/[^\/]+/.test(orig)) {
+			orig += '/' + aFolder;
+			picker = '0';
+		}
+
+		orig = 'imap://'+orig;
+
+		this.getPref('mail.accountmanager.accounts')
+			.split(/[,\s]+/).forEach(function(aAccount) {
+				var identities = this.getPref('mail.account.'+aAccount+'.identities');
+				if (!identities) return;
+				var server = this.getPref('mail.account.'+aAccount+'.server');
+				var username = this.getPref('mail.server.'+server+'.userName');
+				var folder = orig.replace(/\*+/, username);
+				identities.split(/[,\s]+/).forEach(function(aId) {
+					this.setPref(aTarget.replace(/\*+/, aId), folder);
+					this.setPref(aPicker.replace(/\*+/, aId), picker);
+				}, this);
+			}, this);
+	},
+ 
 	migrateAddressBooks : function(aProfile) 
 	{
-log('migrateAddressBooks');
+		log('migrateAddressBooks');
 		var netscape = this.netscape;
 		if (!netscape || !this.isNsutilsInstalled)
 			return;
@@ -312,7 +373,7 @@ log('migrateAddressBooks');
 			'-P',
 			'migration'
 		);
-log('address books are converted');
+		log('address books are converted');
 
 		var profileDir = this.getFileFromPath(aProfile.path);
 		var files = profileDir.directoryEntries;
@@ -332,14 +393,14 @@ log('address books are converted');
 				ignoreFiles.indexOf(RegExp.$1) > -1
 				)
 				continue;
-log(file.path+' should be imported');
+			log(file.path+' should be imported');
 			targets.push(file);
 		}
 		if (!targets.length) return;
 
 		var importAsHomeAddress = this.getPref('extensions.nc4migrator.addressbook.importAsHomeAddress');
 
-log('start to import');
+		log('start to import');
 		var addressBook = Components
 				.classes['@mozilla.org/addressbook;1']
 				.createInstance(Components.interfaces.nsIAddressBook);
@@ -350,19 +411,19 @@ log('start to import');
 			fileSpec.nativePath = aFile.path;
 			addressBook.migrate4xAb(fileSpec, false, importAsHomeAddress);
 		});
-dump('import complete');
+		dump('import complete');
 	},
  	 
 	onFinish : function() 
 	{
-log('onFinish');
+		log('onFinish');
 		if (this.wantsRestart)
 			this.restartApplication();
 	},
 	
 	restartApplication : function() 
 	{
-log('restartApplication');
+		log('restartApplication');
 		this.restarting = true;
 		const startup = Components
 					.classes['@mozilla.org/toolkit/app-startup;1']
@@ -390,10 +451,10 @@ log('restartApplication');
 			nsKey.close();
 
 			this._netscape = this.getFileFromPath(path);
-log('this.netscape = '+this._netscape.path);
+			log('this.netscape = '+this._netscape.path);
 		}
 		catch(e) {
-log(e);
+			log(e);
 //			this.alert('error', e);
 		}
 		return this._netscape;
@@ -420,10 +481,10 @@ log(e);
 			this._netscape4 = this.getFileFromPath(path);
 			this._netscape4.append('Program');
 			this._netscape4.append('netscape.exe');
-log('this.netscape4 = '+this._netscape4.path);
+			log('this.netscape4 = '+this._netscape4.path);
 		}
 		catch(e) {
-log(e);
+			log(e);
 //			this.alert('error', e);
 		}
 		return this._netscape4;
@@ -444,7 +505,7 @@ log(e);
 			else {
 				this._isNsutilsInstalled = false;
 			}
-log('isNsutilsInstalled='+this._isNsutilsInstalled);
+			log('isNsutilsInstalled='+this._isNsutilsInstalled);
 		}
 		return this._isNsutilsInstalled;
 	},
@@ -454,7 +515,7 @@ log('isNsutilsInstalled='+this._isNsutilsInstalled);
 	
 	loadSubScriptInEnvironment : function(aURI, aEnvironment) 
 	{
-log('load script from '+aURI+' to '+aEnvironment);
+		log('load script from '+aURI+' to '+aEnvironment);
 		this.JSSubScriptLoader.loadSubScript(aURI, aEnvironment);
 	},
 	 
@@ -471,7 +532,7 @@ log('load script from '+aURI+' to '+aEnvironment);
   
 	readFrom : function(aFile, aEncoding) 
 	{
-log('read from '+aFile.path+' as '+aEncoding);
+		log('read from '+aFile.path+' as '+aEncoding);
 		var fileContents;
 		var stream = Components
 				.classes['@mozilla.org/network/file-input-stream;1']
@@ -522,9 +583,9 @@ log('read from '+aFile.path+' as '+aEncoding);
  
 	execAndWait : function() 
 	{
-log('execAndWait');
+		log('execAndWait');
 		var args = Array.slice(arguments);
-log('command: '+args.join(' '));
+		log('command: '+args.join(' '));
 		var exe = args.shift();
 
 		if (typeof exe == 'string') exe = this.getFileFromPath(exe);

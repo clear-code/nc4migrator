@@ -300,7 +300,7 @@ StartupService.prototype = {
 			'Templates'
 		);
 		this.upgradeSpecialFolder(
-			'mail.default_drafts',
+			'mail.imap_sentmail_path',
 			'mail.identity.*.fcc_folder',
 			'mail.identity.*.fcc_folder_picker_mode',
 			'Sent'

@@ -1,34 +1,56 @@
+const Cc = Components.classes;
+const Ci = Components.interfaces;
+const Cu = Components.utils;
+
+Cu.import('resource://gre/modules/XPCOMUtils.jsm');
+
 const ObserverService = Components
   .classes['@mozilla.org/observer-service;1']
-  .getService(Components.interfaces.nsIObserverService);
+  .getService(Ci.nsIObserverService);
 
 const Pref = Components
   .classes['@mozilla.org/preferences;1']
-  .getService(Components.interfaces.nsIPrefBranch)
-  .QueryInterface(Components.interfaces.nsIPrefBranch2);
+  .getService(Ci.nsIPrefBranch)
+  .QueryInterface(Ci.nsIPrefBranch2);
+
+if (XPCOMUtils.generateNSGetFactory)
+  var STARTUP_TOPIC = 'profile-after-change'; // for gecko 2.0
+else
+  var STARTUP_TOPIC = 'app-startup';
+
+const Application = Cc['@mozilla.org/steel/application;1']
+    .getService(Ci.steelIApplication);
+
+let { console } = Application;
 
 function log(aMessage)
 {
-  ObserverService.notifyObservers(null, 'log', '[nc4migrator] '+aMessage);
+  console.log(aMessage);
+  // ObserverService.notifyObservers(null, 'log', '[nc4migrator] '+aMessage);
 }
+
+const  kCID  = Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}');
+const  kID   = '@clear-code.com/nc4migrator/startup;1';
+const  kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
 function StartupService() {
 }
-StartupService.prototype = {
-  kCID  : Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}'),
-  kID   : '@clear-code.com/nc4migrator/startup;1',
-  kNAME : 'Netscape Communicator 4 Migration Startup Service',
 
+StartupService.prototype = {
   observe : function(aSubject, aTopic, aData)
   {
     switch (aTopic)
     {
     case 'app-startup':
+      this.listening = true;
       ObserverService.addObserver(this, 'profile-after-change', false);
       return;
 
     case 'profile-after-change':
-      ObserverService.removeObserver(this, 'profile-after-change');
+      if (this.listening) {
+        ObserverService.removeObserver(this, 'profile-after-change');
+        this.listening = false;
+      }
       this.checkAutoMigration();
       return;
     }
@@ -59,7 +81,7 @@ StartupService.prototype = {
 
     var username = Components
       .classes['@mozilla.org/process/environment;1']
-      .getService(Components.interfaces.nsIEnvironment)
+      .getService(Ci.nsIEnvironment)
       .get('username');
     log('username is '+username);
 
@@ -268,11 +290,11 @@ StartupService.prototype = {
         log('mailDir should be migrated!');
         var bag = Components
           .classes['@mozilla.org/hash-property-bag;1']
-          .createInstance(Components.interfaces.nsIWritablePropertyBag);
+          .createInstance(Ci.nsIWritablePropertyBag);
         bag.setProperty('mailDir', mailDir);
         var WindowWatcher = Components
           .classes['@mozilla.org/embedcomp/window-watcher;1']
-          .getService(Components.interfaces.nsIWindowWatcher);
+          .getService(Ci.nsIWindowWatcher);
         log('start migration');
         WindowWatcher.openWindow(
           null,
@@ -386,7 +408,7 @@ StartupService.prototype = {
     var targets = [];
     while (files.hasMoreElements())
     {
-      file = files.getNext().QueryInterface(Components.interfaces.nsILocalFile);
+      file = files.getNext().QueryInterface(Ci.nsILocalFile);
       if (
         file.isDirectory() ||
           !abPattern.test(file.leafName) ||
@@ -403,11 +425,11 @@ StartupService.prototype = {
     log('start to import');
     var addressBook = Components
       .classes['@mozilla.org/addressbook;1']
-      .createInstance(Components.interfaces.nsIAddressBook);
+      .createInstance(Ci.nsIAddressBook);
     targets.forEach(function(aFile) {
       var fileSpec = Components
         .classes['@mozilla.org/filespec;1']
-        .createInstance(Components.interfaces.nsIFileSpec);
+        .createInstance(Ci.nsIFileSpec);
       fileSpec.nativePath = aFile.path;
       addressBook.migrate4xAb(fileSpec, false, importAsHomeAddress);
     });
@@ -427,7 +449,7 @@ StartupService.prototype = {
     this.restarting = true;
     const startup = Components
       .classes['@mozilla.org/toolkit/app-startup;1']
-      .getService(Components.interfaces.nsIAppStartup);
+      .getService(Ci.nsIAppStartup);
     startup.quit(startup.eRestart | startup.eAttemptQuit);
   },
   restarting : false,
@@ -438,7 +460,7 @@ StartupService.prototype = {
     try {
       var nsKey = Components
         .classes['@mozilla.org/windows-registry-key;1']
-        .createInstance(Components.interfaces.nsIWindowsRegKey);
+        .createInstance(Ci.nsIWindowsRegKey);
       nsKey.open(
         nsKey.ROOT_KEY_LOCAL_MACHINE,
         'SOFTWARE\\Netscape\\Netscape',
@@ -466,7 +488,7 @@ StartupService.prototype = {
     try {
       var nsKey = Components
         .classes['@mozilla.org/windows-registry-key;1']
-        .createInstance(Components.interfaces.nsIWindowsRegKey);
+        .createInstance(Ci.nsIWindowsRegKey);
       nsKey.open(
         nsKey.ROOT_KEY_LOCAL_MACHINE,
         'SOFTWARE\\Netscape\\Netscape Navigator',
@@ -524,7 +546,7 @@ StartupService.prototype = {
     if (!this._JSSubScriptLoader) {
       this._JSSubScriptLoader = Components
         .classes['@mozilla.org/moz/jssubscript-loader;1']
-        .getService(Components.interfaces.mozIJSSubScriptLoader);
+        .getService(Ci.mozIJSSubScriptLoader);
     }
     return this._JSSubScriptLoader;
   },
@@ -536,13 +558,13 @@ StartupService.prototype = {
     var fileContents;
     var stream = Components
       .classes['@mozilla.org/network/file-input-stream;1']
-      .createInstance(Components.interfaces.nsIFileInputStream);
+      .createInstance(Ci.nsIFileInputStream);
     try {
       stream.init(aFile, 1, 0, false); // open as "read only"
       if (aEncoding == 'raw') {
         var scriptableStream = Components
           .classes['@mozilla.org/scriptableinputstream;1']
-          .createInstance(Components.interfaces.nsIScriptableInputStream);
+          .createInstance(Ci.nsIScriptableInputStream);
         scriptableStream.init(stream);
         var fileSize = scriptableStream.available();
         fileContents = scriptableStream.read(fileSize);
@@ -551,7 +573,7 @@ StartupService.prototype = {
       else {
         var converterStream = Components
           .classes['@mozilla.org/intl/converter-input-stream;1']
-          .createInstance(Components.interfaces.nsIConverterInputStream);
+          .createInstance(Ci.nsIConverterInputStream);
         converterStream.init(stream, aEncoding || 'UTF-8', stream.available(),
                              converterStream.DEFAULT_REPLACEMENT_CHARACTER);
         var out = {};
@@ -571,8 +593,8 @@ StartupService.prototype = {
   getFileFromPath : function(aPath)
   {
     try {
-      var file = Components.classes['@mozilla.org/file/local;1']
-        .createInstance(Components.interfaces.nsILocalFile);
+      var file = Cc['@mozilla.org/file/local;1']
+        .createInstance(Ci.nsILocalFile);
       file.initWithPath(aPath);
       return file;
     }
@@ -593,7 +615,7 @@ StartupService.prototype = {
 
     var process = Components
       .classes['@mozilla.org/process/util;1']
-      .createInstance(Components.interfaces.nsIProcess);
+      .createInstance(Ci.nsIProcess);
     process.init(exe);
     process.run(true, args, args.length, {});
   },
@@ -617,9 +639,9 @@ StartupService.prototype = {
       case 'number':
         return this.Pref.getIntPref(aKey);
       case 'localizedstring':
-        return this.Pref.getComplexValue(aKey, Components.interfaces.nsIPrefLocalizedString).data;
+        return this.Pref.getComplexValue(aKey, Ci.nsIPrefLocalizedString).data;
       case 'file':
-        return this.Pref.getComplexValue(aKey, Components.interfaces.nsILocalFile);
+        return this.Pref.getComplexValue(aKey, Ci.nsILocalFile);
       default:
         return this.Pref.getBoolPref(aKey);
       }
@@ -674,7 +696,7 @@ StartupService.prototype = {
   {
     return  Components
       .classes['@mozilla.org/embedcomp/prompt-service;1']
-      .getService(Components.interfaces.nsIPromptService);
+      .getService(Ci.nsIPromptService);
   },
 
   alert : function(aTitle, aText)
@@ -691,7 +713,7 @@ StartupService.prototype = {
 
   _bundle : Components
     .classes['@mozilla.org/intl/stringbundle;1']
-    .getService(Components.interfaces.nsIStringBundleService)
+    .getService(Ci.nsIStringBundleService)
     .createBundle('chrome://nc4migrator/locale/nc4migrator.properties'),
 
   getString : function(aKey)
@@ -716,76 +738,24 @@ StartupService.prototype = {
 
   // debug
 
-  Console : Components.classes['@mozilla.org/consoleservice;1']
-    .getService(Components.interfaces.nsIConsoleService),
+  Console : Cc['@mozilla.org/consoleservice;1']
+    .getService(Ci.nsIConsoleService),
 
   log : function() // debug use
   {
     this.Console.logStringMessage(Array.slice(arguments).join('\n'));
   },
 
-  QueryInterface : function(aIID)
-  {
-    if (!aIID.equals(Components.interfaces.nsIObserver) &&
-        !aIID.equals(Components.interfaces.nsISupports)) {
-      throw Components.results.NS_ERROR_NO_INTERFACE;
-    }
-    return this;
-  }
-
+  classID : kCID,
+  contractID : kID,
+  classDescription : kNAME,
+  QueryInterface : XPCOMUtils.generateQI([Ci.nsIObserver]),
+  _xpcom_categories : [
+    { category : STARTUP_TOPIC, service : true }
+  ]
 };
 
-var gModule = {
-  registerSelf : function(aCompMgr, aFileSpec, aLocation, aType)
-  {
-    aCompMgr = aCompMgr.QueryInterface(Components.interfaces.nsIComponentRegistrar);
-    var catMgr = Components.classes['@mozilla.org/categorymanager;1']
-      .getService(Components.interfaces.nsICategoryManager);
-    for (var key in this._objects) {
-      var obj = this._objects[key];
-      aCompMgr.registerFactoryLocation(obj.CID, obj.className, obj.contractID, aFileSpec, aLocation, aType);
-      if (obj.category)
-        catMgr.addCategoryEntry(obj.category, obj.entry || obj.className, obj.contractID, true, true);
-    }
-  },
-
-  getClassObject : function(aCompMgr, aCID, aIID)
-  {
-    if (!aIID.equals(Components.interfaces.nsIFactory))
-      throw Components.results.NS_ERROR_NOT_IMPLEMENTED;
-
-    for (var key in this._objects) {
-      if (aCID.equals(this._objects[key].CID))
-        return this._objects[key].factory;
-    }
-
-    throw Components.results.NS_ERROR_NO_INTERFACE;
-  },
-
-  _objects : {
-    StartupService : {
-      CID        : StartupService.prototype.kCID,
-      contractID : StartupService.prototype.kID,
-      className  : StartupService.prototype.kNAME,
-      factory    : {
-        createInstance : function (aOuter, aIID)
-        {
-          if (aOuter != null)
-            throw Components.results.NS_ERROR_NO_AGGREGATION;
-          return (new StartupService()).QueryInterface(aIID);
-        }
-      },
-      category   : 'app-startup'
-    }
-  },
-
-  canUnload : function(aCompMgr)
-  {
-    return true;
-  }
-};
-
-function NSGetModule(aCompMgr, aFileSpec) {
-  return gModule;
-}
-
+if (XPCOMUtils.generateNSGetFactory)
+  var NSGetFactory = XPCOMUtils.generateNSGetFactory([StartupService]);
+else
+  var NSGetModule = XPCOMUtils.generateNSGetModule([StartupService]);

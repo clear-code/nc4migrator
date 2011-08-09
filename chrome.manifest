@@ -1,2 +1,6 @@
 content	nc4migrator	jar:chrome/nc4migrator.jar!/content/nc4migrator/
 locale	nc4migrator	ja	jar:chrome/nc4migrator.jar!/locale/ja/nc4migrator/
+
+component {1db5ecc0-8615-11dd-ad8b-0800200c9a66} components/Startup.js
+contract @clear-code.com/nc4migrator/startup;1 {1db5ecc0-8615-11dd-ad8b-0800200c9a66}
+category profile-after-change  StartupService @clear-code.com/nc4migrator/startup;1

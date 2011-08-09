@@ -1,4 +1,4 @@
-const ObserverService = Components 
+const ObserverService = Components
 		.classes['@mozilla.org/observer-service;1']
 		.getService(Components.interfaces.nsIObserverService);
 
@@ -11,15 +11,15 @@ function log(aMessage)
 {
 	ObserverService.notifyObservers(null, 'log', '[nc4migrator] '+aMessage);
 }
- 
-function StartupService() { 
+
+function StartupService() {
 }
 StartupService.prototype = {
 	kCID  : Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}'),
 	kID   : '@clear-code.com/nc4migrator/startup;1',
 	kNAME : 'Netscape Communicator 4 Migration Startup Service',
-	 
-	observe : function(aSubject, aTopic, aData) 
+
+	observe : function(aSubject, aTopic, aData)
 	{
 		switch (aTopic)
 		{
@@ -33,8 +33,8 @@ StartupService.prototype = {
 				return;
 		}
 	},
- 
-	checkAutoMigration : function() 
+
+	checkAutoMigration : function()
 	{
 		log('checkAutoMigration');
 		if (this.getPref('mailnews.quotingPrefs.version')) {
@@ -43,8 +43,8 @@ StartupService.prototype = {
 		}
 		this.migrateProfile();
 	},
- 
-	migrateProfile : function() 
+
+	migrateProfile : function()
 	{
 		log('start migration');
 		var profiles = this.nsreg.getProfiles();
@@ -114,8 +114,8 @@ StartupService.prototype = {
 		this.onFinish();
 	},
 	wantsRestart : false,
-	 
-	get nsreg() 
+
+	get nsreg()
 	{
 		if (!this._nsreg) {
 			this._nsreg = {};
@@ -124,8 +124,8 @@ StartupService.prototype = {
 		return this._nsreg;
 	},
 	_nsreg : null,
- 
-	selectProfile : function(aProfiles) 
+
+	selectProfile : function(aProfiles)
 	{
 		log('selectProfile');
 		var selectedProfile = { value : 0 };
@@ -150,8 +150,8 @@ StartupService.prototype = {
 		log('invalid profile is selected');
 		return null;
 	},
- 
-	migratePrefsFrom : function(aFile, aProfile) 
+
+	migratePrefsFrom : function(aFile, aProfile)
 	{
 		log('migratePrefsFrom');
 		var self = this;
@@ -262,7 +262,7 @@ StartupService.prototype = {
 				log('local folder server is '+localFolderServer);
 				this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
 				this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
-				this.wantsRestart = true; // çƒãNìÆå„Ç≈Ç»Ç¢Ç∆ÉtÉHÉãÉ_ÇÃïœçXÇ™îΩâfÇ≥ÇÍÇ»Ç¢
+				this.wantsRestart = true; // ÂÜçËµ∑ÂãïÂæå„Åß„Å™„ÅÑ„Å®„Éï„Ç©„É´„ÉÄ„ÅÆÂ§âÊõ¥„ÅåÂèçÊò†„Åï„Çå„Å™„ÅÑ
 			}
 			else {
 				log('mailDir should be migrated!');
@@ -284,8 +284,8 @@ StartupService.prototype = {
 			}
 		}
 	},
- 
-	upgradeSpecialFolders : function() 
+
+	upgradeSpecialFolders : function()
 	{
 		this.upgradeSpecialFolder(
 			'mail.default_drafts',
@@ -343,8 +343,8 @@ StartupService.prototype = {
 				}, this);
 			}, this);
 	},
- 
-	migrateAddressBooks : function(aProfile) 
+
+	migrateAddressBooks : function(aProfile)
 	{
 		log('migrateAddressBooks');
 		var netscape = this.netscape;
@@ -413,15 +413,15 @@ StartupService.prototype = {
 		});
 		dump('import complete');
 	},
- 	 
-	onFinish : function() 
+
+	onFinish : function()
 	{
 		log('onFinish');
 		if (this.wantsRestart)
 			this.restartApplication();
 	},
-	
-	restartApplication : function() 
+
+	restartApplication : function()
 	{
 		log('restartApplication');
 		this.restarting = true;
@@ -431,8 +431,8 @@ StartupService.prototype = {
 		startup.quit(startup.eRestart | startup.eAttemptQuit);
 	},
 	restarting : false,
-  
-	get netscape() 
+
+	get netscape()
 	{
 		if (this._netscape) return this._netscape;
 		try {
@@ -460,7 +460,7 @@ StartupService.prototype = {
 		return this._netscape;
 	},
 	_netscape : null,
-	get netscape4() 
+	get netscape4()
 	{
 		if (this._netscape4) return this._netscape4;
 		try {
@@ -491,8 +491,8 @@ StartupService.prototype = {
 	},
 	_netscape4 : null,
 
-	 
-	get isNsutilsInstalled() 
+
+	get isNsutilsInstalled()
 	{
 		if (this._isNsutilsInstalled === null) {
 			var nsutils = this.netscape;
@@ -510,16 +510,16 @@ StartupService.prototype = {
 		return this._isNsutilsInstalled;
 	},
 	_isNsutilsInstalled : null,
-  
-	// file I/O 
-	
-	loadSubScriptInEnvironment : function(aURI, aEnvironment) 
+
+	// file I/O
+
+	loadSubScriptInEnvironment : function(aURI, aEnvironment)
 	{
 		log('load script from '+aURI+' to '+aEnvironment);
 		this.JSSubScriptLoader.loadSubScript(aURI, aEnvironment);
 	},
-	 
-	get JSSubScriptLoader() 
+
+	get JSSubScriptLoader()
 	{
 		if (!this._JSSubScriptLoader) {
 			this._JSSubScriptLoader = Components
@@ -529,8 +529,8 @@ StartupService.prototype = {
 		return this._JSSubScriptLoader;
 	},
 	_JSSubScriptLoader : null,
-  
-	readFrom : function(aFile, aEncoding) 
+
+	readFrom : function(aFile, aEncoding)
 	{
 		log('read from '+aFile.path+' as '+aEncoding);
 		var fileContents;
@@ -567,8 +567,8 @@ StartupService.prototype = {
 		}
 		return fileContents;
 	},
- 
-	getFileFromPath : function(aPath) 
+
+	getFileFromPath : function(aPath)
 	{
 		try {
 			var file = Components.classes['@mozilla.org/file/local;1']
@@ -580,8 +580,8 @@ StartupService.prototype = {
 		}
 		return null;
 	},
- 
-	execAndWait : function() 
+
+	execAndWait : function()
 	{
 		log('execAndWait');
 		var args = Array.slice(arguments);
@@ -597,12 +597,12 @@ StartupService.prototype = {
 		process.init(exe);
 		process.run(true, args, args.length, {});
 	},
-  
-	// preferences 
-	
-	Pref : Pref, 
- 
-	getPref : function(aKey, aType) 
+
+	// preferences
+
+	Pref : Pref,
+
+	getPref : function(aKey, aType)
 	{
 		try {
 			switch (
@@ -628,8 +628,8 @@ StartupService.prototype = {
 		}
 		return null;
 	},
- 
-	setPref : function(aKey, aValue, aType) 
+
+	setPref : function(aKey, aValue, aType)
 	{
 		var type;
 		try {
@@ -658,8 +658,8 @@ StartupService.prototype = {
 		}
 		return aValue;
 	},
- 
-	clearPref : function(aKey) 
+
+	clearPref : function(aKey)
 	{
 		try {
 			this.Pref.clearUserPref(aKey);
@@ -667,34 +667,34 @@ StartupService.prototype = {
 		catch(e) {
 		}
 	},
-  
-	// prompt 
-	
-	get PromptService() 
+
+	// prompt
+
+	get PromptService()
 	{
 		return  Components
 				.classes['@mozilla.org/embedcomp/prompt-service;1']
 				.getService(Components.interfaces.nsIPromptService);
 	},
- 
-	alert : function(aTitle, aText) 
+
+	alert : function(aTitle, aText)
 	{
 		this.PromptService.alert(null, aTitle, aText);
 	},
- 
-	confirm : function(aTitle, aText) 
+
+	confirm : function(aTitle, aText)
 	{
 		return this.PromptService.confirm(null, aTitle, aText);
 	},
-  
-	// string bundle 
-	
-	_bundle : Components 
+
+	// string bundle
+
+	_bundle : Components
 		.classes['@mozilla.org/intl/stringbundle;1']
 		.getService(Components.interfaces.nsIStringBundleService)
 		.createBundle('chrome://nc4migrator/locale/nc4migrator.properties'),
- 
-	getString : function(aKey) 
+
+	getString : function(aKey)
 	{
 		try {
 			return this._bundle.GetStringFromName(aKey);
@@ -703,8 +703,8 @@ StartupService.prototype = {
 		}
 		return '';
 	},
- 
-	getFormattedString : function(aKey, aValues) 
+
+	getFormattedString : function(aKey, aValues)
 	{
 		try {
 			return this._bundle.formatStringFromName(aKey, aValues, aValues.length);
@@ -713,18 +713,18 @@ StartupService.prototype = {
 		}
 		return '';
 	},
-  
-	// debug 
-	
-	Console : Components.classes['@mozilla.org/consoleservice;1'] 
+
+	// debug
+
+	Console : Components.classes['@mozilla.org/consoleservice;1']
 		.getService(Components.interfaces.nsIConsoleService),
- 
-	log : function() // debug use 
+
+	log : function() // debug use
 	{
 		this.Console.logStringMessage(Array.slice(arguments).join('\n'));
 	},
-  
-	QueryInterface : function(aIID) 
+
+	QueryInterface : function(aIID)
 	{
 		if (!aIID.equals(Components.interfaces.nsIObserver) &&
 			!aIID.equals(Components.interfaces.nsISupports)) {
@@ -732,10 +732,10 @@ StartupService.prototype = {
 		}
 		return this;
 	}
- 
-}; 
-  
-var gModule = { 
+
+};
+
+var gModule = {
 	registerSelf : function(aCompMgr, aFileSpec, aLocation, aType)
 	{
 		aCompMgr = aCompMgr.QueryInterface(Components.interfaces.nsIComponentRegistrar);
@@ -788,4 +788,4 @@ var gModule = {
 function NSGetModule(aCompMgr, aFileSpec) {
 	return gModule;
 }
- 
+

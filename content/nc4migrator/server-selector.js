@@ -17,15 +17,6 @@ ServerSelector.prototype = {
   incomingServers: null,
   smtpServers: null,
 
-  incomingServerSettingsConverter: {
-    hostname: "hostName"
-  },
-
-  smtpServerSettingsConverter: {
-    hostname: "hostname",
-    description: "description"
-  },
-
   get accountManager() {
     if (!this._accountManager) {
       this._accountManager = Cc["@mozilla.org/messenger/account-manager;1"]
@@ -75,31 +66,12 @@ ServerSelector.prototype = {
     this.smtpServers = serverDatabase.smtpServers;
   },
 
-  convertSettings: function (settings, keyConverter) {
-    let convertedSettings = {};
-    for (let [key, value] in Iterator(settings)) {
-      if (keyConverter.hasOwnProperty(key)) {
-        convertedSettings[keyConverter[key]] = value;
-      }
-    }
-    return convertedSettings;
-  },
-
   applySettings: function () {
-    if (this.targetIncomingServer) {
-      this.applyIncomingServerSettings(
-        this.convertSettings(this.incomingServerSettings,
-                             this.incomingServerSettingsConverter),
-        this.targetIncomingServer
-      );
-    }
+    if (this.targetIncomingServer)
+      this.applyIncomingServerSettings(this.incomingServerSettings, this.targetIncomingServer);
 
-    if (this.targetSmtpServer) {
-      this.applySmtpServerSettings(
-        this.convertSettings(this.smtpServerSettings,
-                             this.smtpServerSettingsConverter),
-        this.targetSmtpServer);
-    }
+    if (this.targetSmtpServer)
+      this.applySmtpServerSettings(this.smtpServerSettings, this.targetSmtpServer);
   },
 
   applyIncomingServerSettings: function (settings, incomingServer /* nsIMsgIncomingServer */) {

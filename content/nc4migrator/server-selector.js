@@ -7,9 +7,10 @@ const Cr = Components.results;
 
 Cu.import("chrome://nc4migrator/content/util.js");
 
-function ServerSelector(serverDatabase, environments) {
-  this.loadServers(serverDatabase);
-  this.initEnvironments(environments);
+function ServerSelector(incomingServerSettings,
+                        smtpServerSettings) {
+  this.incomingServerSettings = incomingServerSettings;
+  this.smtpServerSettings = smtpServerSettings;
 }
 
 ServerSelector.prototype = {
@@ -74,10 +75,6 @@ ServerSelector.prototype = {
     this.smtpServers = serverDatabase.smtpServers;
   },
 
-  initEnvironments: function (environments) {
-    this.environments = environments;
-  },
-
   convertSettings: function (settings, keyConverter) {
     let convertedSettings = {};
     for (let [key, value] in Iterator(settings)) {
@@ -90,39 +87,19 @@ ServerSelector.prototype = {
 
   applySettings: function () {
     if (this.targetIncomingServer) {
-      let incomingServerSettings = this.getAppropriateIncomingServerSettings();
       this.applyIncomingServerSettings(
-        this.convertSettings(incomingServerSettings, this.incomingServerSettingsConverter),
+        this.convertSettings(this.incomingServerSettings,
+                             this.incomingServerSettingsConverter),
         this.targetIncomingServer
       );
     }
 
     if (this.targetSmtpServer) {
-      let smtpServerSettings = this.getAppropriateSmtpServerSettings();
       this.applySmtpServerSettings(
-        this.convertSettings(smtpServerSettings, this.smtpServerSettingsConverter),
+        this.convertSettings(this.smtpServerSettings,
+                             this.smtpServerSettingsConverter),
         this.targetSmtpServer);
     }
-  },
-
-  getAppropriateIncomingServerSettings: function () {
-    let appropriateIncomingServerName = this.environments["incomingServerName"];
-    for (let i = 0, len = this.incomingServers.length; i < len; ++i) {
-      let server = this.incomingServers[i];
-      if (server.name === appropriateIncomingServerName)
-        return server;
-    }
-    return null;
-  },
-
-  getAppropriateSmtpServerSettings: function () {
-    let appropriateSmtpServerName = this.environments["smtpServerName"];
-    for (let i = 0, len = this.smtpServers.length; i < len; ++i) {
-      let smtpServer = this.smtpServers[i];
-      if (smtpServer.name === appropriateSmtpServerName)
-        return smtpServer;
-    }
-    return null;
   },
 
   applyIncomingServerSettings: function (settings, incomingServer /* nsIMsgIncomingServer */) {

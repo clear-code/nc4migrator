@@ -6,6 +6,7 @@ const Cu = Components.utils;
 const Cr = Components.results;
 
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+Cu.import("content://nc4migrator/content/util.js");
 
 const Pref = Cc['@mozilla.org/preferences;1']
   .getService(Ci.nsIPrefBranch)
@@ -20,79 +21,6 @@ defineLazyServiceGetter(Services, "smtpService", "@mozilla.org/messengercompose/
 defineLazyServiceGetter(Services, "userInfo", "@mozilla.org/userinfo;1", "nsIUserInfo");
 defineLazyServiceGetter(Services, "prefBranch", "@mozilla.org/preferences-service;1", "nsIPrefBranch");
 defineLazyServiceGetter(Services, "protocolInfo", "@mozilla.org/messenger/protocol/info;1?type=imap", "nsIMsgProtocolInfo");
-
-var AddressBook = {
-  VCBeginPhrase: "begin",
-  VCEndProp: "end",
-
-  addProperty: function (currentVCard, currentRoot, mask) {
-    // keep in mind as we add properties that we want to filter out any begin and end vcard types....because
-    // we add those automatically...
-
-    if (currentVCard && Services.prefBranch) {
-      var children = Services.prefBranch.getChildList(currentRoot, {});
-      for (var i = 0, len = children.length; i < len; ++i) {
-        var child = children[i];
-
-        if (child !== currentRoot)
-          continue;
-
-        // first iterate over the child in case the child has children
-        currentVCard = AddressBook.addProperty(currentVCard, child, mask);
-
-        // child length should be greater than the mask....
-        if (child.length > mask.length + 1) { // + 1 for the '.' in .property
-          var value = Services.prefBranch.getCharPref(child);
-
-          if (mask)
-            child = child.slice(mask.length + 1);  // eat up the "mail.identity.vcard" part...
-
-          // turn all '.' into ';' which is what vcard format uses
-          child = child.replace(/\./g, ';');
-
-          // filter property to make sure it is one we want to add.....
-          if ((child.toLowerCase().indexOf(this.VCBeginPhrase) !== 0)
-            && (child.toLowerCase().indexOf(this.VCEndProp) !== 0)) {
-            if (value) {
-              // only add the value is not an empty string...
-              if (currentVCard) {
-                // PR_smprintf("%s%s:%s%s", tempString, child, value.get(), "\n");
-                currentVCard = currentVCard + child + ":" + value + "\n";
-              } else {
-                currentVCard = child + ":" + value + "\n";
-              }
-            }
-          }
-        } else {
-          throw new Error("child length should be greater than the mask");
-        }
-      }
-    }
-
-    return currentVCard;
-  },
-
-  // TODO: implement this method
-  convert4xVcardPrefs: function (prefRoot) {
-    var vCardString = this.addProperty("begin:vcard \n", prefRoot, prefRoot);
-
-    var vcard = vCardString + "end:vcard\n";
-
-    //
-    // VObject *vObj = parse_MIME(vcard, strlen(vcard));
-    // PR_FREEIF(vcard);
-    //
-    // nsCOMPtr<nsIAbCard> cardFromVCard = do_CreateInstance(NS_ABCARDPROPERTY_CONTRACTID);
-    // convertFromVObject(vObj, cardFromVCard);
-    //
-    // if (vObj)
-    //     cleanVObject(vObj);
-    //
-    // rv = cardFromVCard->ConvertToEscapedVCard(escapedVCardStr);
-    // NS_ENSURE_SUCCESS(rv,rv);
-    // return rv;
-  }
-};
 
 var MessengerMigrator = {
   "PREF_4X_MAIL_IDENTITY_USEREMAIL": "mail.identity.useremail",
@@ -147,9 +75,9 @@ var MessengerMigrator = {
 
   "DEFAULT_PAB_FILENAME_PREF_NAME": "ldap_2.servers.pab.filename",
 
-  "NS_APP_MAIL_50_DIR"      : "MailD",
-  "NS_APP_IMAP_MAIL_50_DIR" : "IMapMD",
-  "NS_APP_NEWS_50_DIR"      : "NewsD",
+  "NS_APP_MAIL_50_DIR": "MailD",
+  "NS_APP_IMAP_MAIL_50_DIR": "IMapMD",
+  "NS_APP_NEWS_50_DIR": "NewsD",
 
   // // Reset 'm_oldMailType' in case the prefs file has changed. This is possible in quick launch
   // // mode where the profile to be migrated is IMAP type but the current working profile is POP.
@@ -200,6 +128,84 @@ var MessengerMigrator = {
     } catch (x) {}
   },
 
+  // Entry Point
+  upgradePrefs: function () {
+    // Reset some control vars, necessary in turbo mode.
+    this.resetState();
+
+    // because mail.server_type defaults to 0 (pop) it will look the user
+    // has something to migrate, even with an empty prefs.js file
+    // ProceedWithMigration will check if there is something to migrate
+    // if not, NS_FAILED(rv) will be true, and we'll return.
+    // this plays nicely with msgMail3PaneWindow.js, which will launch the
+    // Account Wizard if UpgradePrefs() fails.
+    try {
+      this.proceedWithMigration();
+    } catch (x) {
+      throw new Error("Nothing to migrate: " + x);
+    }
+
+    var identity = Services.accountManager.createIdentity();
+    this.migrateIdentity(identity); // TODO: implement (partially implemented)
+
+    var smtpServer = Services.smtpService.createSmtpServer();
+    this.migrateSmtpServer(smtpServer);
+
+    // set the newly created smtp server as the default
+    // ignore the error code....continue even if this call fails...
+    try {
+      Services.smtpService.defaultServer(smtpServer);
+    } catch (x) {}
+
+    if (this.m_oldMailType === this.POP_4X_MAIL_TYPE) {
+      // in 4.x, you could only have one pop account
+      this.migratePopAccount(identity); // TODO: implement
+
+      // everyone gets a local mail account in 5.0
+      this.createLocalMailAccount(true); // TODO: implement
+    } else if (this.m_oldMailType === this.IMAP_4X_MAIL_TYPE) {
+      this.migrateImapAccounts(identity); // TODO: implement (partially implemented)
+
+      // if they had IMAP in 4.x, they also had "Local Mail"
+      // we'll migrate that to "Local Folders"
+      this.migrateLocalMailAccount(); // TODO: implement
+    } else if (this.HAVE_MOVEMAIL && (this.m_oldMailType === this.MOVEMAIL_4X_MAIL_TYPE)) {
+      // if 4.x, you could only have one movemail account
+      this.migrateMovemailAccount(identity); // TODO: implement
+
+      // everyone gets a local mail account in 5.0
+      this.createLocalMailAccount(true); // TODO: implement
+    } else {
+      return new Error("NS_ERROR_UNEXPECTED: unexpected!");
+    }
+
+    this.migrateNewsAccounts(identity); // TODO: implement
+
+    if (this.MOZ_LDAP_XPCOM) {
+      // this will upgrade the ldap prefs
+      // Memo: explicitly
+      var ldapPrefsService = Cc["@mozilla.org/ldapprefs-service;1"].getService();
+    }
+
+    this.migrateAddressBookPrefs(); // TODO: implement
+
+    this.migrateAddressBooks(); // TODO: implement
+
+    try {
+      Pref.clearUserPref(this.PREF_4X_MAIL_POP_PASSWORD);
+    } catch (x) {
+      // intentionally ignore the exception
+    }
+
+    // we're done migrating, let's save the prefs
+    Pref.QueryInterface(Ci.nsIPrefService);
+    Pref.savePrefFile(null);
+
+    // remove the temporary identity we used for migration purposes
+    identity.clearAllValues();
+    Services.accountManager.removeIdentity(identity);
+  },
+
   resetState: function () {
     this.m_alreadySetNntpDefaultLocalPath = false;
     this.m_alreadySetImapDefaultLocalPath = false;
@@ -241,8 +247,9 @@ var MessengerMigrator = {
     this.MIGRATE_SIMPLE_FILE_PREF_TO_BOOL_PREF(this.PREF_4X_MAIL_SIGNATURE_FILE, identity, "attachSignature");
     this.MIGRATE_SIMPLE_INT_PREF(this.PREF_4X_MAIL_SIGNATURE_DATE, identity, "signatureDate");
 
-    this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_ATTACH_VCARD, identity, "attachVCard");
-
+    // Note: https://redmine.clear-code.com/issues/868
+    //       No need to migrate Vcard
+    // this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_ATTACH_VCARD, identity, "attachVCard");
     // identity.escapedVCardStr = this.escapedVCardStrFrom4XPref(this.PREF_4X_MAIL_IDENTITY_VCARD_ROOT);
   },
 
@@ -371,83 +378,6 @@ var MessengerMigrator = {
     server.loginAtStartUp = true;
   },
 
-  upgradePrefs: function () {
-    // Reset some control vars, necessary in turbo mode.
-    this.resetState();
-
-    // because mail.server_type defaults to 0 (pop) it will look the user
-    // has something to migrate, even with an empty prefs.js file
-    // ProceedWithMigration will check if there is something to migrate
-    // if not, NS_FAILED(rv) will be true, and we'll return.
-    // this plays nicely with msgMail3PaneWindow.js, which will launch the
-    // Account Wizard if UpgradePrefs() fails.
-    try {
-      this.proceedWithMigration();
-    } catch (x) {
-      throw new Error("Nothing to migrate: " + x);
-    }
-
-    var identity = Services.accountManager.createIdentity();
-    this.migrateIdentity(identity); // TODO: implement (partially implemented)
-
-    var smtpServer = Services.smtpService.createSmtpServer();
-    this.migrateSmtpServer(smtpServer);
-
-    // set the newly created smtp server as the default
-    // ignore the error code....continue even if this call fails...
-    try {
-      Services.smtpService.defaultServer(smtpServer);
-    } catch (x) {}
-
-    if (this.m_oldMailType === this.POP_4X_MAIL_TYPE) {
-      // in 4.x, you could only have one pop account
-      this.migratePopAccount(identity); // TODO: implement
-
-      // everyone gets a local mail account in 5.0
-      this.createLocalMailAccount(true); // TODO: implement
-    } else if (this.m_oldMailType === this.IMAP_4X_MAIL_TYPE) {
-      this.migrateImapAccounts(identity); // TODO: implement (partially implemented)
-
-      // if they had IMAP in 4.x, they also had "Local Mail"
-      // we'll migrate that to "Local Folders"
-      this.migrateLocalMailAccount(); // TODO: implement
-    } else if (this.HAVE_MOVEMAIL && (this.m_oldMailType === this.MOVEMAIL_4X_MAIL_TYPE)) {
-      // if 4.x, you could only have one movemail account
-      this.migrateMovemailAccount(identity); // TODO: implement
-
-      // everyone gets a local mail account in 5.0
-      this.createLocalMailAccount(true); // TODO: implement
-    } else {
-      return new Error("NS_ERROR_UNEXPECTED: unexpected!");
-    }
-
-    this.migrateNewsAccounts(identity); // TODO: implement
-
-    if (this.MOZ_LDAP_XPCOM) {
-      // this will upgrade the ldap prefs
-      // Memo: explicitly
-      var ldapPrefsService = Cc["@mozilla.org/ldapprefs-service;1"].getService();
-    }
-
-    this.migrateAddressBookPrefs(); // TODO: implement
-
-    this.migrateAddressBooks(); // TODO: implement
-
-    try {
-      Pref.clearUserPref(this.PREF_4X_MAIL_POP_PASSWORD);
-    } catch (x) {
-      // intentionally ignore the exception
-    }
-
-    // we're done migrating, let's save the prefs
-    Pref.QueryInterface(Ci.nsIPrefService);
-    Pref.savePrefFile(null);
-
-    // remove the temporary identity we used for migration purposes
-    identity.clearAllValues();
-    Services.accountManager.removeIdentity(identity);
-  },
-
   // Migrate する必要のあるものが存在するかをチェック。存在しなければ
   // 例外。
   proceedWithMigration: function () {
@@ -481,5 +411,78 @@ var MessengerMigrator = {
     } else {
       throw new Error("NS_ERROR_UNEXPECTED");
     }
+  }
+};
+
+var AddressBook = {
+  VCBeginPhrase: "begin",
+  VCEndProp: "end",
+
+  addProperty: function (currentVCard, currentRoot, mask) {
+    // keep in mind as we add properties that we want to filter out any begin and end vcard types....because
+    // we add those automatically...
+
+    if (currentVCard && Services.prefBranch) {
+      var children = Services.prefBranch.getChildList(currentRoot, {});
+      for (var i = 0, len = children.length; i < len; ++i) {
+        var child = children[i];
+
+        if (child !== currentRoot)
+          continue;
+
+        // first iterate over the child in case the child has children
+        currentVCard = AddressBook.addProperty(currentVCard, child, mask);
+
+        // child length should be greater than the mask....
+        if (child.length > mask.length + 1) { // + 1 for the '.' in .property
+          var value = Services.prefBranch.getCharPref(child);
+
+          if (mask)
+            child = child.slice(mask.length + 1);  // eat up the "mail.identity.vcard" part...
+
+          // turn all '.' into ';' which is what vcard format uses
+          child = child.replace(/\./g, ';');
+
+          // filter property to make sure it is one we want to add.....
+          if ((child.toLowerCase().indexOf(this.VCBeginPhrase) !== 0)
+            && (child.toLowerCase().indexOf(this.VCEndProp) !== 0)) {
+            if (value) {
+              // only add the value is not an empty string...
+              if (currentVCard) {
+                // PR_smprintf("%s%s:%s%s", tempString, child, value.get(), "\n");
+                currentVCard = currentVCard + child + ":" + value + "\n";
+              } else {
+                currentVCard = child + ":" + value + "\n";
+              }
+            }
+          }
+        } else {
+          throw new Error("child length should be greater than the mask");
+        }
+      }
+    }
+
+    return currentVCard;
+  },
+
+  // TODO: implement this method
+  convert4xVcardPrefs: function (prefRoot) {
+    var vCardString = this.addProperty("begin:vcard \n", prefRoot, prefRoot);
+
+    var vcard = vCardString + "end:vcard\n";
+
+    //
+    // VObject *vObj = parse_MIME(vcard, strlen(vcard));
+    // PR_FREEIF(vcard);
+    //
+    // nsCOMPtr<nsIAbCard> cardFromVCard = do_CreateInstance(NS_ABCARDPROPERTY_CONTRACTID);
+    // convertFromVObject(vObj, cardFromVCard);
+    //
+    // if (vObj)
+    //     cleanVObject(vObj);
+    //
+    // rv = cardFromVCard->ConvertToEscapedVCard(escapedVCardStr);
+    // NS_ENSURE_SUCCESS(rv,rv);
+    // return rv;
   }
 };

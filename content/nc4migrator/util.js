@@ -105,9 +105,72 @@ var Util = {
     return Util.writeFile(aTarget, JSON.stringify(aObject));
   },
 
+  getSpecialDirectory: function (aProp) {
+    var dirService = Cc['@mozilla.org/file/directory_service;1']
+      .getService(Ci.nsIProperties);
+
+    return dirService.get(aProp, Ci.nsILocalFile);
+  },
+
+  format: function (formatString) {
+    var values = Array.slice(arguments, 1);
+
+    return formatString.replace(/%s/g, function () {
+      return (values.shift() || "");
+    });
+  },
+
   log: function () {
     if (this.DEBUG)
-      Application.console.log.apply(Application.console, arguments);
+      Application.console.log(Util.format.apply(Util, arguments));
+  },
+
+  evalInContext: function (aCode, aContext) {
+    const EVAL_ERROR  = "__nc4_eval_error";
+    const EVAL_RESULT = "__nc4_eval_result";
+    const EVAL_STRING = "__nc4_eval_string";
+
+    try {
+      if (!aContext)
+        aContext = this.userContext;
+
+      aContext[EVAL_ERROR]  = null;
+      aContext[EVAL_STRING] = aCode;
+      aContext[EVAL_RESULT] = null;
+
+      Cc["@mozilla.org/moz/jssubscript-loader;1"]
+        .getService(Ci.mozIJSSubScriptLoader)
+        .loadSubScript("chrome://nc4migrator/content/eval.js", aContext);
+
+      if (aContext[EVAL_ERROR])
+        throw aContext[EVAL_ERROR];
+
+      return aContext[EVAL_RESULT];
+    } finally {
+      delete aContext[EVAL_ERROR];
+      delete aContext[EVAL_RESULT];
+      delete aContext[EVAL_STRING];
+    }
+  },
+
+  LOGGER_INDENTATION: 2,
+  LOGGER_INDENT_CHAR: " ",
+  logger: function (indent) {
+    var self = {
+      indent: indent || 0,
+      next: function (f) {
+        f(Util.logger(indent + Util.LOGGER_INDENTATION));
+      },
+      log: function (msg) {
+        var indentedMsg = msg.split("\n").map(
+          function (l)
+          (new Array(self.indent)).join(Util.LOGGER_INDENT_CHAR)
+        );
+        Util.log(indentedMsg);
+      }
+    };
+
+    return self;
   },
 
   http: {

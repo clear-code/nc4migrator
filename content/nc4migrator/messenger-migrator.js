@@ -45,10 +45,9 @@ const Cr = Components.results;
 
 const { XPCOMUtils } = Cu.import("resource://gre/modules/XPCOMUtils.jsm", {});
 const { Util } = Cu.import("chrome://nc4migrator/content/util.js", {});
+const { Preferences } = Cu.import("chrome://nc4migrator/content/Preferences.js", {});
 
-const Pref = Cc['@mozilla.org/preferences;1']
-  .getService(Ci.nsIPrefBranch)
-  .QueryInterface(Ci.nsIPrefBranch2);
+const Prefs = new Preferences("");
 
 const Services = {};
 function setService() {
@@ -60,11 +59,15 @@ function setService() {
 setService("accountManager", "@mozilla.org/messenger/account-manager;1", "nsIMsgAccountManager");
 setService("smtpService", "@mozilla.org/messengercompose/smtp;1", "nsISmtpService");
 setService("userInfo", "@mozilla.org/userinfo;1", "nsIUserInfo");
-setService("prefBranch", "@mozilla.org/preferences-service;1", "nsIPrefBranch");
+setService("prefBranch", "@mozilla.org/preferences-service;1", "nsIPrefBranch2");
 setService("protocolInfo", "@mozilla.org/messenger/protocol/info;1?type=imap", "nsIMsgProtocolInfo");
 setService("sBundleService", "@mozilla.org/intl/stringbundle;1", "nsIStringBundleService");
 
-var MessengerMigrator = {
+function MessengerMigrator(prefObject) {
+  this.setupN4Pref(prefObject);
+}
+
+MessengerMigrator.prototype = {
   "PREF_4X_MAIL_IDENTITY_USEREMAIL": "mail.identity.useremail",
   "PREF_4X_MAIL_IDENTITY_USERNAME": "mail.identity.username",
   "PREF_4X_MAIL_IDENTITY_REPLY_TO": "mail.identity.reply_to",
@@ -136,78 +139,70 @@ var MessengerMigrator = {
   m_alreadySetImapDefaultLocalPath: false,
 
   // TODO: check definition
-  HAVE_MOVEMAIL: true,
+  HAVE_MOVEMAIL: false,
   MOZ_LDAP_XPCOM: true,
 
-  handleMigratePrefException: function (x) {
-    Util.log("Error in MIGRATE :: " + x);
+  "POP_4X_MAIL_TYPE": 0,
+  "IMAP_4X_MAIL_TYPE": 1,
+  "MOVEMAIL_4X_MAIL_TYPE": 2,
+
+  setupN4Pref: function (prefObject) {
+    this.prefObject = prefObject;
   },
 
-  MIGRATE_SIMPLE_STR_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
+  hasN4Pref: function (prefName) {
+    return this.prefObject.hasOwnProperty(prefName);
+  },
+
+  // Converters
+  CONVERTER_FILE: function (path) {
     try {
-      object[propName] = Pref.getCharPref(prefName, null);
-    } catch (x) { this.handleMigratePrefException(x); }
+      return Util.openFile(path);
+    } catch (x) {
+      return null;
+    }
   },
 
-  MIGRATE_SIMPLE_WSTR_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
+  getN4Pref: function (prefName, defaultValue, converter) {
+    var value;
+    if (this.hasN4Pref(prefName))
+      value = this.prefObject[prefName];
+    else if (1 in arguments)
+      value = defaultValue;
+    else
+      value = null;
+
+    return value && (typeof converter === "function")
+      ? converter(value) : value;
+  },
+
+  setN4Pref: function (prefName, value) {
+    this.prefsObject[prefName] = value;
+  },
+
+  migratePref: function (prefName, object, propName, converter) {
+    if (!this.hasN4Pref(prefName))
+      return;
+
     try {
-      object[propName] = Pref.getComplexValue(prefName);
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_SIMPLE_INT_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
-    try {
-      object[propName] = Pref.getIntPref(prefName);
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_SIMPLE_BOOL_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
-    try {
-      object[propName] = Pref.getBoolPref(prefName);
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_SIMPLE_FILE_PREF_TO_FILE_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
-    try {
-      object[propName] = Pref.getComplexValue(prefName);
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_SIMPLE_FILE_PREF_TO_BOOL_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
-    try {
-      object[propName] = !!Pref.getComplexValue(prefName);
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_SIMPLE_FILE_PREF_TO_CHAR_PREF: function (prefName, object, propName) {
-    Util.log("Set %s to %s %s", prefName, Object.prototype.toString.call(object), propName);
-    try {
-      object[propName] = Pref.getComplexValue(prefName).path; // XXX: もとは getUnixStyleFilePath
-    } catch (x) { this.handleMigratePrefException(x); }
-  },
-
-  MIGRATE_STR_PREF: function (formatString, formatValue, object, propName) {
-    this.MIGRATE_SIMPLE_STR_PREF(Util.format(formatString, formatValue), object, propName);
-  },
-
-  MIGRATE_INT_PREF: function (formatString, formatValue, object, propName) {
-    this.MIGRATE_SIMPLE_INT_PREF(Util.format(formatString, formatValue), object, propName);
-  },
-
-  MIGRATE_BOOL_PREF: function (formatString, formatValue, object, propName) {
-    this.MIGRATE_SIMPLE_BOOL_PREF(Util.format(formatString, formatValue), object, propName);
+      var prefValue = this.getN4Pref(prefName, null, converter);
+      Util.log("Set [%s] (%s) to %s %s",
+               prefValue,
+               prefName,
+               Object.prototype.toString.call(object),
+               propName);
+      object[propName] = prefValue;
+    } catch (x) {
+      Util.log(x);
+    }
   },
 
   // Entry Point
   upgradePrefs: function () {
     // Reset some control vars, necessary in turbo mode.
     this.resetState();
+
+    Util.log("oldMailType :: " + this.m_oldMailType);
 
     // because mail.server_type defaults to 0 (pop) it will look the user
     // has something to migrate, even with an empty prefs.js file
@@ -274,15 +269,9 @@ var MessengerMigrator = {
     // this.migrateAddressBookPrefs();
     // this.migrateAddressBooks();
 
-    try {
-      Pref.clearUserPref(this.PREF_4X_MAIL_POP_PASSWORD);
-    } catch (x) {
-      // intentionally ignore the exception
-    }
-
     // we're done migrating, let's save the prefs
-    Pref.QueryInterface(Ci.nsIPrefService);
-    Pref.savePrefFile(null);
+    // Pref.QueryInterface(Ci.nsIPrefService);
+    // Pref.savePrefFile(null);
 
     // remove the temporary identity we used for migration purposes
     identity.clearAllValues();
@@ -295,51 +284,42 @@ var MessengerMigrator = {
 
     // Reset 'm_oldMailType' in case the prefs file has changed. This is possible in quick launch
     // mode where the profile to be migrated is IMAP type but the current working profile is POP.
-    try {
-      this.m_oldMailType = Pref.getIntPref(this.PREF_4X_MAIL_SERVER_TYPE);
-    } catch (x) {
-      this.m_oldMailType = -1;
-    }
+    this.m_oldMailType = this.getN4Pref(this.PREF_4X_MAIL_SERVER_TYPE, -1);
   },
 
   setUsernameIfNecessary: function () {
-    try {
-      var usernameIn4x = Pref.getCharPref(this.PREF_4X_MAIL_IDENTITY_USERNAME);
-      if (usernameIn4x)
-        return;
-    } catch (x) {}
+    if (this.getN4Pref(this.PREF_4X_MAIL_IDENTITY_USERNAME))
+      return;
 
-    try {
-      var fullnameFromSystem = Services.userInfo.getFullName();
-      if (!fullnameFromSystem)
-        return;
-    } catch (x) {}
+    var fullnameFromSystem = Services.userInfo.getFullName();
+    if (!fullnameFromSystem)
+      return;
 
-    Pref.setComplexValue(this.PREF_4X_MAIL_IDENTITY_USERNAME, fullnameFromSystem);
+    this.setN4Pref(this.PREF_4X_MAIL_IDENTITY_USERNAME, fullnameFromSystem);
   },
 
   migrateIdentity: function (identity) {
     this.setUsernameIfNecessary();
 
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_IDENTITY_USEREMAIL, identity, "email");
-    this.MIGRATE_SIMPLE_WSTR_PREF(this.PREF_4X_MAIL_IDENTITY_USERNAME, identity, "fullName");
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_IDENTITY_REPLY_TO, identity, "replyTo");
-    this.MIGRATE_SIMPLE_WSTR_PREF(this.PREF_4X_MAIL_IDENTITY_ORGANIZATION, identity, "organization");
-    this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_COMPOSE_HTML, identity, "composeHtml");
-    this.MIGRATE_SIMPLE_FILE_PREF_TO_FILE_PREF(this.PREF_4X_MAIL_SIGNATURE_FILE, identity, "signature");
-    this.MIGRATE_SIMPLE_FILE_PREF_TO_BOOL_PREF(this.PREF_4X_MAIL_SIGNATURE_FILE, identity, "attachSignature");
-    this.MIGRATE_SIMPLE_INT_PREF(this.PREF_4X_MAIL_SIGNATURE_DATE, identity, "signatureDate");
+    this.migratePref(this.PREF_4X_MAIL_IDENTITY_USEREMAIL, identity, "email");
+    this.migratePref(this.PREF_4X_MAIL_IDENTITY_USERNAME, identity, "fullName");
+    this.migratePref(this.PREF_4X_MAIL_IDENTITY_REPLY_TO, identity, "replyTo");
+    this.migratePref(this.PREF_4X_MAIL_IDENTITY_ORGANIZATION, identity, "organization");
+    this.migratePref(this.PREF_4X_MAIL_COMPOSE_HTML, identity, "composeHtml");
+    this.migratePref(this.PREF_4X_MAIL_SIGNATURE_FILE, identity, "signature", this.CONVERTER_FILE);
+    this.migratePref(this.PREF_4X_MAIL_SIGNATURE_FILE, identity, "attachSignature", this.CONVERTER_FILE);
+    this.migratePref(this.PREF_4X_MAIL_SIGNATURE_DATE, identity, "signatureDate");
 
     // Note: https://redmine.clear-code.com/issues/868
     //       No need to migrate Vcard
-    // this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_ATTACH_VCARD, identity, "attachVCard");
+    // this.migratePref(this.PREF_4X_MAIL_ATTACH_VCARD, identity, "attachVCard");
     // identity.escapedVCardStr = this.escapedVCardStrFrom4XPref(this.PREF_4X_MAIL_IDENTITY_VCARD_ROOT);
   },
 
   migrateSmtpServer: function (server) {
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_NETWORK_HOSTS_SMTP_SERVER, server, "hostname");
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_SMTP_NAME, server, "username");
-    this.MIGRATE_SIMPLE_INT_PREF(this.PREF_4X_MAIL_SMTP_SSL, server, "trySSL");
+    this.migratePref(this.PREF_4X_NETWORK_HOSTS_SMTP_SERVER, server, "hostname");
+    this.migratePref(this.PREF_4X_MAIL_SMTP_NAME, server, "username");
+    this.migratePref(this.PREF_4X_MAIL_SMTP_SSL, server, "trySSL");
   },
 
   migratePopAccount: function (server) {
@@ -348,7 +328,7 @@ var MessengerMigrator = {
 
   migrateImapAccounts: function (identity) {
     var isDefaultAccount = true;
-    var servers = Services.prefBranch.getCharPref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "");
+    var servers = this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "");
 
     var logger = Util.logger();
     logger.log("servers: " + servers);
@@ -359,16 +339,16 @@ var MessengerMigrator = {
         this.migrateImapAccount(identity, server, isDefaultAccount);
         isDefaultAccount = false;
       }, this);
-    });
+    }, this);
   },
 
   migrateImapAccount: function (identity, hostAndPort, isDefaultAccount) {
     // get the old username
     var imapUsernamePref = "mail.imap.server." + hostAndPort + ".userName";
-    var username = Services.prefBranch.getCharPref(imapUsernamePref);
+    var username = Prefs.get(imapUsernamePref, null);
 
     var imapIsSecurePref = "mail.imap.server." + hostAndPort + ".isSecure";
-    var isSecure = Services.prefBranch.getBoolPref(imapIsSecurePref, false);
+    var isSecure = Prefs.get(imapIsSecurePref, null);
 
     // get the old host (and possibly port)
     var [host, port] = hostAndPort.split(":");
@@ -396,8 +376,7 @@ var MessengerMigrator = {
 
     // if they used -installer, this pref will point to where their files got copied
     // if the "mail.imap.root_dir" pref is set, use that.
-    // TODO: これで nsIFile が本当に返ってくるかどうか確認
-    var imapMailDir = Services.prefBranch.getComplexValue(this.PREF_IMAP_DIRECTORY);
+    var imapMailDir = this.CONVERTER_FILE(Prefs.get(this.PREF_IMAP_DIRECTORY, null));
 
     if (!imapMailDir) {
       // we want <profile>/ImapMail
@@ -457,57 +436,59 @@ var MessengerMigrator = {
     server.loginAtStartUp = true;
   },
 
+  migrateLocalMailAccount: function () {
+    // TODO: Implement this
+    throw new Error("Implement this");
+  },
+
   migrateOldImapPrefs: function (server, hostAndPort) {
     var imapServer = server.QueryInterface(Ci.nsIImapIncomingServer);
 
     // upgrade the msg incoming server prefs
     // don't migrate the remember password pref.  see bug #42216
     //MIGRATE_BOOL_PREF("mail.imap.server.%s.remember_password",hostAndPort,server,SetRememberPassword)
-    server.rememberPassword = false;
+    // server.rememberPassword = false;
     server.password = null;
 
-    // upgrade the imap incoming server specific prefs
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.check_new_mail",hostAndPort,server,"SetDoBiff");
-    this.MIGRATE_INT_PREF("mail.imap.server.%s.check_time",hostAndPort,server,"SetBiffMinutes");
     // "mail.imap.new_mail_get_headers" was a global pref across all imap servers in 4.x
     // in 5.0, it's per server
-    this.MIGRATE_BOOL_PREF("%s","mail.imap.new_mail_get_headers",server,"downloadOnBiff");
-    this.MIGRATE_STR_PREF("mail.imap.server.%s.admin_url",hostAndPort,imapServer,"adminUrl");
-    this.MIGRATE_STR_PREF("mail.imap.server.%s.server_sub_directory",hostAndPort,imapServer,"serverDirectory");
-    this.MIGRATE_INT_PREF("mail.imap.server.%s.capability",hostAndPort,imapServer,"capabilityPref");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.cleanup_inbox_on_exit",hostAndPort,imapServer,"cleanupInboxOnExit");
-    this.MIGRATE_INT_PREF("mail.imap.server.%s.delete_model",hostAndPort,imapServer,"deleteModel");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.dual_use_folders",hostAndPort,imapServer,"dualUseFolders");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.empty_trash_on_exit",hostAndPort,server,"emptyTrashOnExit");
-    this.MIGRATE_INT_PREF("mail.imap.server.%s.empty_trash_threshhold",hostAndPort,imapServer,"emptyTrashThreshhold");
-    this.MIGRATE_STR_PREF("mail.imap.server.%s.namespace.other_users",hostAndPort,imapServer,"otherUsersNamespace");
-    this.MIGRATE_STR_PREF("mail.imap.server.%s.namespace.personal",hostAndPort,imapServer,"personalNamespace");
-    this.MIGRATE_STR_PREF("mail.imap.server.%s.namespace.public",hostAndPort,imapServer,"publicNamespace");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.offline_download",hostAndPort,imapServer,"offlineDownload");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.override_namespaces",hostAndPort,imapServer,"overrideNamespaces");
-    this.MIGRATE_BOOL_PREF("mail.imap.server.%s.using_subscription",hostAndPort,imapServer,"usingSubscription");
+    this.migratePref("mail.imap.new_mail_get_headers",server,"downloadOnBiff");
+    // upgrade the imap incoming server specific prefs
+    this.migratePref("mail.imap.server."+hostAndPort+".check_new_mail",server,"doBiff");
+    this.migratePref("mail.imap.server."+hostAndPort+".check_time",server,"biffMinutes");
+    this.migratePref("mail.imap.server."+hostAndPort+".admin_url",imapServer,"adminUrl");
+    this.migratePref("mail.imap.server."+hostAndPort+".server_sub_directory",imapServer,"serverDirectory");
+    this.migratePref("mail.imap.server."+hostAndPort+".capability",imapServer,"capabilityPref");
+    this.migratePref("mail.imap.server."+hostAndPort+".cleanup_inbox_on_exit",imapServer,"cleanupInboxOnExit");
+    this.migratePref("mail.imap.server."+hostAndPort+".delete_model",imapServer,"deleteModel");
+    this.migratePref("mail.imap.server."+hostAndPort+".dual_use_folders",imapServer,"dualUseFolders");
+    this.migratePref("mail.imap.server."+hostAndPort+".empty_trash_on_exit",server,"emptyTrashOnExit");
+    this.migratePref("mail.imap.server."+hostAndPort+".empty_trash_threshhold",imapServer,"emptyTrashThreshhold");
+    this.migratePref("mail.imap.server."+hostAndPort+".namespace.other_users",imapServer,"otherUsersNamespace");
+    this.migratePref("mail.imap.server."+hostAndPort+".namespace.personal",imapServer,"personalNamespace");
+    this.migratePref("mail.imap.server."+hostAndPort+".namespace.public",imapServer,"publicNamespace");
+    this.migratePref("mail.imap.server."+hostAndPort+".offline_download",imapServer,"offlineDownload");
+    this.migratePref("mail.imap.server."+hostAndPort+".override_namespaces",imapServer,"overrideNamespaces");
+    this.migratePref("mail.imap.server."+hostAndPort+".using_subscription",imapServer,"usingSubscription");
   },
 
   setMailCopiesAndFolders: function (identity, username, host) {
     return;                     // TODO: No need for this migration?
 
     // TODO: implement this
-    this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_CC_SELF,identity,"bccSelf");
-    this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_USE_DEFAULT_CC,identity,"bccOthers");
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_DEFAULT_CC,identity,"bccList");
-    this.MIGRATE_SIMPLE_BOOL_PREF(this.PREF_4X_MAIL_USE_FCC,identity,"doFcc");
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_DEFAULT_DRAFTS,identity,"draftFolder");
-    this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_DEFAULT_TEMPLATES,identity,"stationeryFolder");
+    this.migratePref(this.PREF_4X_MAIL_CC_SELF,identity,"bccSelf");
+    this.migratePref(this.PREF_4X_MAIL_USE_DEFAULT_CC,identity,"bccOthers");
+    this.migratePref(this.PREF_4X_MAIL_DEFAULT_CC,identity,"bccList");
+    this.migratePref(this.PREF_4X_MAIL_USE_FCC,identity,"doFcc");
+    this.migratePref(this.PREF_4X_MAIL_DEFAULT_DRAFTS,identity,"draftFolder");
+    this.migratePref(this.PREF_4X_MAIL_DEFAULT_TEMPLATES,identity,"stationeryFolder");
 
-    var imapUsedURIForSentIn4X = Services.prefBranch.getBoolPref(
-      this.PREF_4X_MAIL_USE_IMAP_SENTMAIL,
-      false
-    );
+    var imapUsedURIForSentIn4X = Prefs.get(this.PREF_4X_MAIL_USE_IMAP_SENTMAIL, false);
 
     if (!imapUsedURIForSentIn4X) {
-      this.MIGRATE_SIMPLE_FILE_PREF_TO_CHAR_PREF(this.PREF_4X_MAIL_DEFAULT_FCC,identity,"fccFolder");
+      this.migratePref(this.PREF_4X_MAIL_DEFAULT_FCC,identity,"fccFolder");
     } else {
-      this.MIGRATE_SIMPLE_STR_PREF(this.PREF_4X_MAIL_IMAP_SENTMAIL_PATH,identity,"fccFolder");
+      this.migratePref(this.PREF_4X_MAIL_IMAP_SENTMAIL_PATH,identity,"fccFolder");
     }
 
     // CONVERT_4X_URI(identity, PR_FALSE /* for news */, username, hostname, DEFAULT_4X_SENT_FOLDER_NAME,GetFccFolder,SetFccFolder,DEFAULT_FCC_FOLDER_PREF_NAME)
@@ -518,33 +499,17 @@ var MessengerMigrator = {
   // Migrate する必要のあるものが存在するかをチェック。存在しなければ
   // 例外。
   proceedWithMigration: function () {
-    var prefValue = null;
-
     if ((this.m_oldMailType == this.POP_4X_MAIL_TYPE)
       || (this.HAVE_MOVEMAIL && (this.m_oldMailType == this.MOVEMAIL_4X_MAIL_TYPE))) {
       // if they were using pop or movemail, "mail.pop_name" must have been set
       // otherwise, they don't really have anything to migrate
-      try {
-        prefValue = Pref.getCharPref(this.PREF_4X_MAIL_POP_NAME);
-      } catch (x) {
-        prefValue = null;
-      } finally {
-        if (!prefValue) {
-          // throw NS_ERROR_FAILURE
-        }
-      }
+      if (!this.getN4Pref(this.PREF_4X_MAIL_POP_NAME, false))
+        throw new Error("NS_ERROR_FAILURE");
     } else if (this.m_oldMailType == this.IMAP_4X_MAIL_TYPE) {
       // if they were using imap, "network.hosts.imap_servers" must have been set
       // otherwise, they don't really have anything to migrate
-      try {
-        prefValue = Pref.getCharPref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER);
-      } catch (x) {
-        prefValue = null;
-      } finally {
-        if (!prefValue) {
-          throw new Error("PREF_4X_NETWORK_HOSTS_IMAP_SERVER");
-        }
-      }
+      if (!this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, false))
+        throw new Error("PREF_4X_NETWORK_HOSTS_IMAP_SERVER");
     } else {
       throw new Error("NS_ERROR_UNEXPECTED");
     }

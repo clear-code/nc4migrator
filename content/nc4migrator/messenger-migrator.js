@@ -221,8 +221,10 @@ MessengerMigrator.prototype = {
     // set the newly created smtp server as the default
     // ignore the error code....continue even if this call fails...
     try {
-      Services.smtpService.defaultServer(smtpServer);
-    } catch (x) {}
+      Services.smtpService.defaultServer = smtpServer;
+    } catch (x) {
+      Util.log("Failed to set " + smtpServer + " as default");
+    }
 
     if (this.m_oldMailType === this.POP_4X_MAIL_TYPE) {
       Util.log("OOPS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -238,7 +240,11 @@ MessengerMigrator.prototype = {
 
       // if they had IMAP in 4.x, they also had "Local Mail"
       // we'll migrate that to "Local Folders"
-      this.migrateLocalMailAccount(); // TODO: implement
+      try {
+        this.migrateLocalMailAccount(); // TODO: implement
+      } catch (x) {
+        Util.log("Failed to migrate local mail account " + x + "  " + x.stack);
+      }
     } else if (this.HAVE_MOVEMAIL &&
                (this.m_oldMailType === this.MOVEMAIL_4X_MAIL_TYPE)) {
       Util.log("OOPS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -256,22 +262,21 @@ MessengerMigrator.prototype = {
     // TODO: implement
     // this.migrateNewsAccounts(identity);
 
-    if (this.MOZ_LDAP_XPCOM) {
-      // this will upgrade the ldap prefs
-      // Memo: explicitly
-      var ldapPrefsService = Cc["@mozilla.org/ldapprefs-service;1"].getService();
-    }
+    // if (this.MOZ_LDAP_XPCOM) {
+    // this will upgrade the ldap prefs
+    // Memo: explicitly
+    //   var ldapPrefsService = Cc["@mozilla.org/ldapprefs-service;1"].getService();
+    // }
 
     // this.migrateAddressBookPrefs();
     // this.migrateAddressBooks();
 
     // we're done migrating, let's save the prefs
-    // Pref.QueryInterface(Ci.nsIPrefService);
     // Pref.savePrefFile(null);
 
     // remove the temporary identity we used for migration purposes
     identity.clearAllValues();
-    Services.accountManager.removeIdentity(identity);
+    // Services.accountManager.removeIdentity(identity);
   },
 
   resetState: function () {
@@ -643,20 +648,19 @@ MessengerMigrator.prototype = {
 
 var IncomingServerTools = {
   IMAP_DEFAULT_ACCOUNT_NAME: 5057, // TODO fetch from actual interface
-  IMAP_MSGS_URL: "chrome://messenger/locale/imapMsgs.properties",
 
   generatePrettyNameForMigration: function (server) {
     /**
      * Pretty name for migrated account is of format username@hostname:<port>,
      * provided the port is valid and not the default
      */
-    var userName = server.userName;
+    var userName = server.username;
     var hostName = server.hostName;
 
     // Get the default port
-    var defaultServerPort = Services.protocolInfo.getDefaultServerPort(false);
+    var defaultServerPort = Services.imapProtocolInfo.getDefaultServerPort(false);
     // Get the default secure port
-    var defaultSecureServerPort = Services.protocolInfo.getDefaultServerPort(true);
+    var defaultSecureServerPort = Services.imapProtocolInfo.getDefaultServerPort(true);
 
     // Get the current server port
     var serverPort = server.port;

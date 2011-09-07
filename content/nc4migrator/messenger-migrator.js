@@ -226,6 +226,9 @@ MessengerMigrator.prototype = {
       Util.log("Failed to set " + smtpServer + " as default");
     }
 
+    // created identities
+    var identities = null;
+
     if (this.m_oldMailType === this.POP_4X_MAIL_TYPE) {
       Util.log("OOPS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
       throw new Error("Death to Pop!!!!");
@@ -236,7 +239,7 @@ MessengerMigrator.prototype = {
       // everyone gets a local mail account in 5.0
       this.createLocalMailAccount(true); // TODO: implement
     } else if (this.m_oldMailType === this.IMAP_4X_MAIL_TYPE) {
-      this.migrateImapAccounts(identity); // TODO: implement (partially implemented)
+      identities = this.migrateImapAccounts(identity);
 
       // if they had IMAP in 4.x, they also had "Local Mail"
       // we'll migrate that to "Local Folders"
@@ -277,6 +280,21 @@ MessengerMigrator.prototype = {
     // remove the temporary identity we used for migration purposes
     identity.clearAllValues();
     // Services.accountManager.removeIdentity(identity);
+
+    if (identities)
+      identities.forEach(this.makeSpecialFolderLocal, this);
+  },
+
+  makeSpecialFolderLocal: function (identity) {
+    identity.fccFolderPickerMode = "0";
+    identity.draftsFolderPickerMode = "0";
+    identity.archivesFolderPickerMode = "0"; // this is default to 0, but ensure.
+    identity.tmplFolderPickerMode = "0";
+
+    // mailbox://nobody@Local%20Folders/Archives
+    let localMsgFolder = Services.accountManager.localFoldersServer.rootMsgFolder;
+    let archiveFolderURI = localMsgFolder.URI + "/Archives";
+    identity.archiveFolder = archiveFolderURI;
   },
 
   resetState: function () {
@@ -334,9 +352,11 @@ MessengerMigrator.prototype = {
       servers = this.imapServersFilter(servers);
 
     Util.log("defaultImapServers => %s", servers);
-    servers.forEach(function (server, idx) {
+
+    // returns created identities
+    return servers.map(function (server, idx) {
       let isDefaultAccount = idx === 0;
-      this.migrateImapAccount(identity, server, isDefaultAccount);
+      return this.migrateImapAccount(identity, server, isDefaultAccount);
     }, this);
   },
 
@@ -437,6 +457,8 @@ MessengerMigrator.prototype = {
 
     // Set check for new mail option for default account to TRUE
     server.loginAtStartUp = true;
+
+    return copiedIdentity;
   },
 
   get mLocalFoldersName() StringBundle.messenger.GetStringFromName("localFolders"),

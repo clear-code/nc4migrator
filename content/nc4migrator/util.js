@@ -112,7 +112,33 @@ var Util = {
     return dirService.get(aProp, Ci.nsILocalFile);
   },
 
+  copyDirectoryAs: function (source, dest) {
+    let sourceDir = this.getFile(source);
+    let destDir = this.getFile(dest);
+
+    if (destDir.exists())
+      destDir.remove(true);
+    sourceDir.copyTo(destDir.parent, destDir.leafName);
+  },
+
+  readDirectory: function (directory) {
+    directory = Util.getFile(directory);
+
+    var entries = null;
+
+    if (directory.isDirectory()) {
+      entries = directory.directoryEntries;
+      let array = [];
+      while (entries.hasMoreElements())
+        array.push(entries.getNext().QueryInterface(Ci.nsIFile));
+    }
+
+    return entries;
+  },
+
   format: function (formatString) {
+    formatString = "" + formatString;
+
     var values = Array.slice(arguments, 1);
 
     return formatString.replace(/%s/g, function () {

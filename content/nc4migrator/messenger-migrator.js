@@ -504,12 +504,6 @@ var IncomingServerTools = {
   IMAP_DEFAULT_ACCOUNT_NAME: 5057, // TODO fetch from actual interface
   IMAP_MSGS_URL: "chrome://messenger/locale/imapMsgs.properties",
 
-  get stringBundle() {
-    if (!this._stringBundle)
-      this._stringBundle = Services.sBundleService.createBundle(this.IMAP_MSGS_URL);
-    return this._stringBundle;
-  },
-
   generatePrettyNameForMigration: function (server) {
     /**
      * Pretty name for migrated account is of format username@hostname:<port>,
@@ -549,7 +543,7 @@ var IncomingServerTools = {
   },
 
   getFormattedStringFromID: function (constructedPrettyName, id) {
-    return this.stringBundle.formatStringFromID(id, [constructedPrettyName], 1);
+    return StringBundle.imapMsgs.formatStringFromID(id, [constructedPrettyName], 1);
   }
 };
 

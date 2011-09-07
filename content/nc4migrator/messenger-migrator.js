@@ -330,24 +330,10 @@ MessengerMigrator.prototype = {
   migrateImapAccounts: function (identity) {
     let servers = this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "").split(",");
 
-    Util.log("defaultImapServers => %s", servers);
-
-    if (this.defaultImapServers) {
-      let targetServerMap = { __proto__: true };
-      this.defaultImapServers.forEach(function (server) targetServerMap[server] = true);
-
-      for (let [idx, serverName] in Iterator(servers)) {
-        if (targetServerMap[serverName]) {
-          // this is a target server
-          let [targetServer] = servers.splice(idx, 1);
-          servers.unshift(targetServer);
-          break;
-        }
-      }
-    }
+    if (typeof this.imapServersFilter === "function")
+      servers = this.imapServersFilter(servers);
 
     Util.log("defaultImapServers => %s", servers);
-
     servers.forEach(function (server, idx) {
       let isDefaultAccount = idx === 0;
       this.migrateImapAccount(identity, server, isDefaultAccount);

@@ -32,7 +32,7 @@ var Util = {
 
   getFile: function (aTarget) {
     let file;
-    if (aTarget instanceof Cc.nsIFile)
+    if (aTarget instanceof Ci.nsIFile)
       file = aTarget;
     else
       file = Util.openFile(aTarget);

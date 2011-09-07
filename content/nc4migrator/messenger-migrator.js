@@ -699,18 +699,24 @@ var LocalFolderMigrator = {
   },
 
   cleanDirectory: function (directory) {
-    for (let [, file] in Iterator(Util.readDirectory())) {
-      if (file.isDirectory()) {
-        LocalFolderMigrator.cleanDirectory(file);
-      } else if (LocalFolderMigrator.shouldIgnoreFile(file)) {
-        file.remove();
-      }
-    }
+    let files = Util.readDirectory(directory) || [];
+    files.forEach(function (file) {
+      if (!file)
+        return;
+
+      try {
+        if (file.isDirectory()) {
+          LocalFolderMigrator.cleanDirectory(file);
+        } else if (LocalFolderMigrator.shouldIgnoreFile(file)) {
+          file.remove(true);
+        }
+      } catch (x) {}
+    });
   },
 
   migrateTo: function (source, dest, newName) {
     var sourceDir = Util.getFile(source);
-    var destDir = Util.getFile(dest);
+    var destDir   = Util.getFile(dest);
 
     var destFile = destDir.clone();
     destFile.append(newName);

@@ -47,8 +47,12 @@ const { StringBundle } = Cu.import("chrome://nc4migrator/content/StringBundle.js
 
 const Prefs = new Preferences("");
 
-function MessengerMigrator(prefObject) {
+function MessengerMigrator(prefObject, options) {
+  options = options || {};
+  // prefObject, profile
   this.setupN4Pref(prefObject);
+  this.profile = options.profile || null;
+  this.defaultImapServers = options.defaultImapServers;
 }
 
 MessengerMigrator.prototype = {
@@ -319,47 +323,63 @@ MessengerMigrator.prototype = {
   },
 
   migrateImapAccounts: function (identity) {
-    var isDefaultAccount = true;
-    var servers = this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "");
+    let servers = this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "").split(",");
 
-    var logger = Util.logger();
-    logger.log("servers: " + servers);
+    Util.log("defaultImapServers => %s", servers);
 
-    logger.next(function (logger) {
-      servers.split(",").forEach(function (server) {
-        logger.log("servers: " + servers);
-        this.migrateImapAccount(identity, server, isDefaultAccount);
-        isDefaultAccount = false;
-      }, this);
+    if (this.defaultImapServers) {
+      let targetServerMap = { __proto__: true };
+      this.defaultImapServers.forEach(function (server) targetServerMap[server] = true);
+
+      for (let [idx, serverName] in Iterator(servers)) {
+        if (targetServerMap[serverName]) {
+          // this is a target server
+          let [targetServer] = servers.splice(idx, 1);
+          servers.unshift(targetServer);
+          break;
+        }
+      }
+    }
+
+    Util.log("defaultImapServers => %s", servers);
+
+    servers.forEach(function (server, idx) {
+      let isDefaultAccount = idx === 0;
+      this.migrateImapAccount(identity, server, isDefaultAccount);
     }, this);
   },
 
   migrateImapAccount: function (identity, hostAndPort, isDefaultAccount) {
     // get the old username
     var imapUsernamePref = "mail.imap.server." + hostAndPort + ".userName";
-    var username = Prefs.get(imapUsernamePref, null);
+    var username = this.getN4Pref(imapUsernamePref, "");
 
     var imapIsSecurePref = "mail.imap.server." + hostAndPort + ".isSecure";
-    var isSecure = Prefs.get(imapIsSecurePref, null);
+    var isSecure = this.getN4Pref(imapIsSecurePref, false);
 
     // get the old host (and possibly port)
     var [host, port] = hostAndPort.split(":");
     if (port)
       port = parseInt(port, 10); // TODO: handle exception
     else
-      port = Services.protocolInfo.getDefaultServerPort(true);
+      port = Services.imapProtocolInfo.getDefaultServerPort(isSecure);
 
     //
     // create the server
     //
-    var server = Services.accountManager.createIncomingServer(username, host, "imap");
+    try {
+      // createIncomingServer may fail is there is already a account with username and host
+      var server = Services.accountManager.createIncomingServer(username, host, "imap");
+    } catch (x) {
+      return;
+    }
     server.port = port;
     server.isSecure = isSecure;
 
     // Generate unique pretty name for the account. It is important that this function
     // is called here after all port settings are taken care of.
     // Port values, if not default, will be used as a part of pretty name.
-    var prettyName = server.generatePrettyNameForMigration();
+    var prettyName = IncomingServerTools.generatePrettyNameForMigration(server);
     if (prettyName)
       server.prettyName = prettyName;
 

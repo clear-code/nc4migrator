@@ -52,7 +52,7 @@ function MessengerMigrator(prefObject, options) {
   // prefObject, profile
   this.setupN4Pref(prefObject);
   this.profile = options.profile || null;
-  this.defaultImapServers = options.defaultImapServers;
+  this.imapServersFilter = options.imapServersFilter || null;
 }
 
 MessengerMigrator.prototype = {

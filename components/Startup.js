@@ -118,20 +118,9 @@ StartupService.prototype = {
       return;
     }
 
-    var pref = this.getFileFromPath(profile.path);
-    pref.append('prefs.js');
-    log('prefs.js: '+pref.path);
-    if (!pref.exists()) {
-      log('prefs.js doesn\'t exist');
-      this.alert(
-        this.getString('prefsMigrationFailed_title'),
-        this.getString('prefsMigrationFailed_text')
-      );
-      return;
-    }
-    this.migratePrefsFrom(pref, profile);
+    this.migratePrefsFrom(profile);
 
-    this.migrateAddressBooks(profile);
+    // this.migrateAddressBooks(profile);
 
     this.onFinish();
   },
@@ -173,14 +162,53 @@ StartupService.prototype = {
     return null;
   },
 
-  migratePrefsFrom : function(aFile, aProfile)
+  migratePrefsFrom : function(aProfile)
   {
-    log('migratePrefsFrom');
     var self = this;
+    var prefsObject = this.getPrefsObjectForProfile(aProfile);
+
+    Util.log(JSON.stringify(prefsObject, null, 2));
+
+    if (!prefsObject) {
+      this.alert(
+        this.getString('prefsMigrationFailed_title'),
+        this.getString('prefsMigrationFailed_text')
+      );
+      return;
+    }
+
+    let defaultImapServers = (this.getPref('extensions.nc4migrator.defaultImapServers') || "").split(",");
+
+    var migrator = new MessengerMigrator(prefsObject, {
+      profile: aProfile,
+      imapServersFilter: function (servers) {
+        return servers.filter(function (server) defaultImapServers.indexOf(server) >= 0);
+      }
+    });
+
+    migrator.upgradePrefs();
+
+    var accountUtils = {};
+    this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', accountUtils);
+    accountUtils.verifyAccounts();
+
+    // this.upgradeSpecialFolders();
+  },
+
+  getPrefsObjectForProfile : function(aProfile) {
+    var prefsFile = this.getFileFromPath(aProfile.path);
+    prefsFile.append('prefs.js');
+
+    if (!prefsFile.exists())
+      return null;
+
+    var prefsObject = {};
+
     var setPref = function(aKey, aValue) {
       if (typeof aValue == 'number' && isNaN(aValue)) return;
-      self.setPref(aKey, aValue);
+      prefsObject[aKey] = aValue;
     };
+
     var sandbox = {
       user_pref : setPref,
       pref : setPref,
@@ -213,98 +241,14 @@ StartupService.prototype = {
             );
           })
           .join('');
-        log('loaded autoConfig:\n---------------------\n'+decoded+'\n---------------------');
-        eval(decoded, sandbox);
+        Util.evalInContext(decoded, sandbox);
       }
     }
 
-    var contents = this.readFrom(aFile, 'Shift_JIS');
-    log('loaded prefs:\n---------------------\n'+contents+'\n---------------------');
-    eval(contents, sandbox);
+    var contents = this.readFrom(prefsFile, 'Shift_JIS');
+    Util.evalInContext(contents, sandbox);
 
-    var mailDir = this.getPref('mail.directory');
-    log('mailDir='+mailDir);
-    if (mailDir) {
-      log('clear preference');
-      this.clearPref('mail.directory');
-    }
-    else {
-      mailDir = this.getFileFromPath(aProfile.path);
-      mailDir.append('Mail');
-      mailDir = mailDir.exists() ? mailDir.path : '' ;
-      log('autodetect: mailDir='+mailDir);
-    }
-
-    log('ready to verify accounts');
-    this.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', (function() { return this; })());
-    verifyAccounts();
-    log('verification complete');
-
-    this.upgradeSpecialFolders();
-
-    var prefix = 'extensions.nc4migrator.override.';
-    Pref.getChildList(prefix, {}).forEach(function(aPref) {
-      var key = aPref.replace(prefix, '');
-      var value = this.getPref(aPref);
-      var shouldClear = (value == '[[CLEAR]]');
-      log('override: '+aPref+' = '+value);
-      if (key.indexOf('*') > -1) {
-        log('wildcard');
-        var regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
-        Pref.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
-          if (!regexp.test(aPref)) return;
-          if (shouldClear) {
-            log('clear '+aPref);
-            this.clearPref(aPref);
-          }
-          else {
-            log('override '+aPref+' by '+value);
-            this.setPref(aPref, value);
-          }
-        }, this);
-      }
-      else {
-        if (shouldClear) {
-          log('clear '+key);
-          this.clearPref(key);
-        }
-        else {
-          log('override '+key+' by '+value);
-          this.setPref(key, value);
-        }
-      }
-    }, this);
-    log('override:complete');
-
-    if (mailDir) {
-      log('mailDir resetting');
-      if (this.getPref('extensions.nc4migrator.shareOldMailbox')) {
-        log('mailDir is set to be shared!');
-        var localFolderServer = this.getPref('mail.accountmanager.localfoldersserver');
-        log('local folder server is '+localFolderServer);
-        this.clearPref('mail.server.'+localFolderServer+'.directory-rel');
-        this.setPref('mail.server.'+localFolderServer+'.directory', mailDir);
-        this.wantsRestart = true; // 再起動後でないとフォルダの変更が反映されない
-      }
-      else {
-        log('mailDir should be migrated!');
-        var bag = Components
-          .classes['@mozilla.org/hash-property-bag;1']
-          .createInstance(Ci.nsIWritablePropertyBag);
-        bag.setProperty('mailDir', mailDir);
-        var WindowWatcher = Components
-          .classes['@mozilla.org/embedcomp/window-watcher;1']
-          .getService(Ci.nsIWindowWatcher);
-        log('start migration');
-        WindowWatcher.openWindow(
-          null,
-          'chrome://nc4migrator/content/migration.xul',
-          'nc4migrator:mailmigration',
-          'chrome,dialog,modal,dependent',
-          bag
-        );
-      }
-    }
+    return prefsObject;
   },
 
   upgradeSpecialFolders : function()

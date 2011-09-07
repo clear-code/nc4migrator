@@ -467,8 +467,12 @@ MessengerMigrator.prototype = {
   },
 
   getLocalFolderServer: function () {
-    if (Services.accountManager.localFoldersServer)
-      return Services.accountManager.localFoldersServer;
+    try {
+      if (Services.accountManager.localFoldersServer)
+        return Services.accountManager.localFoldersServer;
+    } catch (x) {
+      Util.log("Failed to get Services.accountManager.localFoldersServer");
+    }
 
     var localFoldersServer = Services.accountManager.createIncomingServer(
       this.LOCAL_MAIL_FAKE_USER_NAME,

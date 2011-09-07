@@ -158,8 +158,8 @@ var Util = {
   logger: function (indent) {
     var self = {
       indent: indent || 0,
-      next: function (f) {
-        f(Util.logger(indent + Util.LOGGER_INDENTATION));
+      next: function (f, self) {
+        f.call(self, Util.logger(indent + Util.LOGGER_INDENTATION));
       },
       log: function (msg) {
         var indentedMsg = msg.split("\n").map(

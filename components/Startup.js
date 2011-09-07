@@ -33,6 +33,9 @@ const  kCID  = Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}');
 const  kID   = '@clear-code.com/nc4migrator/startup;1';
 const  kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
+Cu.import('chrome://nc4migrator/content/util.js');
+Cu.import('chrome://nc4migrator/content/messenger-migrator.js');
+
 function StartupService() {
 }
 
@@ -79,11 +82,7 @@ StartupService.prototype = {
       return;
     }
 
-    var username = Components
-      .classes['@mozilla.org/process/environment;1']
-      .getService(Ci.nsIEnvironment)
-      .get('username');
-    log('username is '+username);
+    var username = Util.getEnv("username", Util.getEnv("USER"));
 
     var ignoreCase = this.getPref('extensions.nc4migrator.profileDetection.ignoreCase');
     if (ignoreCase) username = username.toLowerCase();

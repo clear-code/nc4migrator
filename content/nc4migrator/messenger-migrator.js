@@ -130,6 +130,14 @@ MessengerMigrator.prototype = {
   "IMAP_4X_MAIL_TYPE": 1,
   "MOVEMAIL_4X_MAIL_TYPE": 2,
 
+  PREF_MAIL_DIRECTORY: "mail.directory",
+  PREF_NEWS_DIRECTORY: "news.directory",
+    PREF_PREMIGRATION_MAIL_DIRECTORY: "premigration.mail.directory",
+  PREF_PREMIGRATION_NEWS_DIRECTORY: "premigration.news.directory",
+  PREF_IMAP_DIRECTORY: "mail.imap.root_dir",
+  PREF_MAIL_DEFAULT_SENDLATER_URI: "mail.default_sendlater_uri",
+  LOCAL_MAIL_FAKE_USER_NAME: "nobody",
+
   setupN4Pref: function (prefObject) {
     this.prefObject = prefObject;
   },
@@ -420,9 +428,122 @@ MessengerMigrator.prototype = {
     server.loginAtStartUp = true;
   },
 
+  get mLocalFoldersName() StringBundle.messenger.GetStringFromName("localFolders"),
+  mLocalFoldersHostname: "Local Folders",
+
+  get n4ProfileDirectory() {
+    if (!this.profile)
+      return null;
+    Util.log("Profile Path :: " + this.profile.path);
+    return Util.openFile(this.profile.path);
+  },
+
+  N4_DEFAULT_MAIL_DIRECTORY_NAME: "Mail",
+  get n4MailDirectory() {
+    var oldMailDirPath = this.getN4Pref(this.PREF_MAIL_DIRECTORY, null);
+    if (oldMailDirPath)
+      return oldMailDirPath;
+
+    var profileDirectory = this.n4ProfileDirectory;
+    Util.log("profile Directory => " + profileDirectory);
+    if (profileDirectory) {
+      profileDirectory.append(this.N4_DEFAULT_MAIL_DIRECTORY_NAME);
+      Util.log("Mail Directory => " + profileDirectory.path);
+      return profileDirectory;
+    }
+
+    return null;
+  },
+
+  getLocalFolderServer: function () {
+    if (Services.accountManager.localFoldersServer)
+      return Services.accountManager.localFoldersServer;
+
+    var localFoldersServer = Services.accountManager.createIncomingServer(
+      this.LOCAL_MAIL_FAKE_USER_NAME,
+      this.mLocalFoldersHostname,
+      "none"
+    );
+
+    var mailDir = Util.getSpecialDirectory(this.NS_APP_MAIL_50_DIR);
+    if (!mailDir.exists())
+      mailDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0775); // Mail
+
+    mailDir.append(this.mLocalFoldersHostname);        // Mail/Local Folders
+    if (!mailDir.exists())
+      mailDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0775);
+
+    // set localpath
+    localFoldersServer.localPath = mailDir;
+    // set the default local path for "none"
+    localFoldersServer.setDefaultLocalPath(mailDir); // XXX: needed?
+
+    // we don't want "nobody at Local Folders" to show up in the
+    // folder pane, so we set the pretty name to "Local Folders"
+    localFoldersServer.prettyName = this.mLocalFoldersName;
+
+    // pass the "Local Folders" server so the send later uri pref
+    // will be "mailbox://nobody@Local Folders/Unsent Messages"
+    // this.setSendLaterUriPref(localFoldersServer); // TODO: implement
+
+    // Create an account when valid server values are established.
+    // This will keep the status of accounts sane by avoiding the addition of incomplete accounts.
+    var localFolderAccount = Services.accountManager.createAccount();
+
+    // notice, no identity for local mail
+    // hook the server to the account
+    // after we set the server's local path
+    // (see bug #66018)
+    localFolderAccount.incomingServer = localFoldersServer;
+
+    // remember this as the local folders server
+    Services.accountManager.localFoldersServer = localFoldersServer;
+
+    return localFoldersServer;
+  },
+
   migrateLocalMailAccount: function () {
-    // TODO: Implement this
-    throw new Error("Implement this");
+    // create the server
+    // "none" is the type we use for migrating 4.x "Local Mail"
+    var localFoldersServer = this.getLocalFolderServer();
+
+    // now upgrade all the prefs
+    // some of this ought to be moved out into the NONE implementation
+    localFoldersServer.QueryInterface(Ci.nsINoIncomingServer);
+
+    // if the "mail.directory" pref is set, use that.
+    // if they used -installer, this pref will point to where their files got copied
+
+    var oldMailDir = this.n4MailDirectory;
+
+    var mailDir = localFoldersServer.localPath;
+
+    Util.log("Now, migrate %s => %s",
+             oldMailDir && oldMailDir.path, mailDir && mailDir.path);
+
+    if (oldMailDir) {
+      // now copy mails in old local folders
+      mailDir.launch();
+      // we need to set this to <profile>/Mail/Local Folders, because that's where
+      // the 4.x "Local Mail" (when using imap) got copied.
+      // it would be great to use the server key, but we don't know it
+      // when we are copying of the mail.
+      let name = Services.accountManager.defaultAccount.incomingServer.username;
+      let localFolderFile = mailDir.clone();
+      localFolderFile.append(name);
+      if (!localFolderFile.exists())
+        localFolderFile.create(0, 0644);
+      LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd");
+    }
+
+    // TODO: Implement this!
+    // localFoldersServer.CopyDefaultMessages("Templates", mailDir);
+
+    return ;
+  },
+
+  setSendLaterUriPref: function (server) {
+    Util.log("TODO: Implement this");
   },
 
   migrateOldImapPrefs: function (server, hostAndPort) {
@@ -544,6 +665,51 @@ var IncomingServerTools = {
 
   getFormattedStringFromID: function (constructedPrettyName, id) {
     return StringBundle.imapMsgs.formatStringFromID(id, [constructedPrettyName], 1);
+  }
+};
+
+var LocalFolderMigrator = {
+  // http://mxr.mozilla.org/comm-central/source/mailnews/import/comm4x/src/nsComm4xMail.cpp#70
+
+  shouldIgnoreFile: function (file) {
+    var path = file.path.toLowerCase();
+
+    return /\.snm$/.test(path) ||
+      /\.toc$/.test(path)      ||
+      /\.sbd$/.test(path)      ||
+      path === "sort.dat"      ||
+      path === "popstate.dat"  ||
+      path === "sort.dat"      ||
+      path === "mailfilt.log"  ||
+      path === "filters.js";
+  },
+
+  cleanDirectory: function (directory) {
+    for (let [, file] in Iterator(Util.readDirectory())) {
+      if (file.isDirectory()) {
+        LocalFolderMigrator.cleanDirectory(file);
+      } else if (LocalFolderMigrator.shouldIgnoreFile(file)) {
+        file.remove();
+      }
+    }
+  },
+
+  migrateTo: function (source, dest, newName) {
+    var sourceDir = Util.getFile(source);
+    var destDir = Util.getFile(dest);
+
+    var destFile = destDir.clone();
+    destFile.append(newName);
+    if (destFile.exists()) {
+      Util.log("%s exists. Remove it!", destFile.path);
+      destFile.remove(true);
+    }
+
+    Util.log("sourceDir => " + sourceDir.path);
+    Util.log("destDir => " + destDir.path);
+
+    sourceDir.copyTo(destDir, newName);
+    this.cleanDirectory(destFile);
   }
 };
 

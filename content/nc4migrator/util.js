@@ -124,16 +124,15 @@ var Util = {
   readDirectory: function (directory) {
     directory = Util.getFile(directory);
 
-    var entries = null;
-
     if (directory.isDirectory()) {
-      entries = directory.directoryEntries;
+      let entries = directory.directoryEntries;
       let array = [];
       while (entries.hasMoreElements())
         array.push(entries.getNext().QueryInterface(Ci.nsIFile));
+      return array;
     }
 
-    return entries;
+    return null;
   },
 
   format: function (formatString) {

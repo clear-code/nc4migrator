@@ -286,6 +286,9 @@ MessengerMigrator.prototype = {
   },
 
   makeSpecialFolderLocal: function (identity) {
+    if (!identity)
+      return;
+
     identity.fccFolderPickerMode = "0";
     identity.draftsFolderPickerMode = "0";
     identity.archivesFolderPickerMode = "0"; // this is default to 0, but ensure.
@@ -378,11 +381,12 @@ MessengerMigrator.prototype = {
     //
     // create the server
     //
+    // http://mxr.mozilla.org/comm-central/source/mailnews/base/src/nsMsgAccountManager.cpp#1897
     try {
-      // createIncomingServer may fail is there is already a account with username and host
       var server = Services.accountManager.createIncomingServer(username, host, "imap");
-    } catch (x) {
-      return;
+    } catch ([]) {
+      // Server already imported
+      return null;
     }
     server.port = port;
     server.isSecure = isSecure;

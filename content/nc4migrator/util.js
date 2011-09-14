@@ -135,6 +135,22 @@ var Util = {
     return null;
   },
 
+  // Get file for file-1, file-2, file-3, ...
+  // Currently, for directory only (do not consider suffixes)
+  getIdenticalFileFor: function (originalFile) {
+    var parent       = originalFile.parent;
+    var file         = originalFile;
+    var originalName = originalFile.leafName;
+
+    var i = 0;
+    while (file.exists()) {
+      file = parent.clone();
+      file.append(originalName + "-" + (++i));
+    }
+
+    return file;
+  },
+
   format: function (formatString) {
     formatString = "" + formatString;
 

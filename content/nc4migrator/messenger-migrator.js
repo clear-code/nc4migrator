@@ -425,6 +425,8 @@ MessengerMigrator.prototype = {
 
     // we want .../ImapMail/<hostname>, not .../ImapMail
     imapMailDir.append(host);
+    // prevent maildir confliction
+    imapMailDir = Util.getIdenticalFileFor(imapMailDir);
 
     // set the local path for this "imap" server
     server.localPath = imapMailDir;

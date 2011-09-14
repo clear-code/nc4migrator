@@ -214,6 +214,26 @@ var Util = {
     return self;
   },
 
+  // ============================================================
+  // DOM
+  // ============================================================
+
+  getElementCreator: function (doc) {
+    return function elementCreator(name, attrs, children) {
+      let elem = doc.createElement(name);
+
+      if (attrs)
+        for (let [k, v] in Iterator(attrs))
+          elem.setAttribute(k, v);
+
+      if (children)
+        for (let [, v] in Iterator(children))
+          elem.appendChild(v);
+
+      return elem;
+    };
+  },
+
   http: {
     params:
     function params(prm) {

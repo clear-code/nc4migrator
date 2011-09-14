@@ -1,0 +1,24 @@
+<!ENTITY wizard.title "アカウント移行ウィザード">
+
+<!-- Basic Words -->
+
+<!ENTITY wizard.profile "移行プロファイル">
+<!ENTITY wizard.account "メールアカウント">
+<!ENTITY wizard.quota "メール容量">
+<!ENTITY wizard.estimatedMigrationTime "移行処理時間">
+
+<!-- Profile List -->
+
+<!ENTITY wizard.profileList.description "移行するプロファイルを一つ選択してください。">
+
+<!-- Migration Confirmation -->
+
+<!ENTITY wizard.migrationConfirmation.description "次のプロファイルを移行します。よろしいですか？">
+
+<!-- Migration Progress -->
+
+<!ENTITY wizard.migrationProgress.description "次のプロファイルを移行しています。しばらくお待ちください。">
+
+<!-- Migration Finished -->
+
+<!ENTITY wizard.migrationProgress.description "次のアカウントの移行が完了しました。">

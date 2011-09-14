@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="messenger.css"?>
+<overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  <menupopup id="taskPopup">
+    <menuitem id="nc4migrator-migration-wizard"
+              label="Netscape Messenger Migration Wizard"
+              oncommand="Nc4Migrator.beginMigration();" />
+  </menupopup>
+
+  <script type="application/x-javascript" src="./messenger-overlay.js" />
+</overlay>

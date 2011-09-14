@@ -129,7 +129,7 @@ StartupService.prototype = {
   {
     if (!this._nsreg) {
       this._nsreg = {};
-      this.loadSubScriptInEnvironment('chrome://nc4migrator/content/nsreg.js', this._nsreg);
+      Cu.import("chrome://nc4migrator/content/modules/nsreg.js", this._nsreg);
     }
     return this._nsreg;
   },

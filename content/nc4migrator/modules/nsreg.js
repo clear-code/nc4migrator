@@ -7,6 +7,8 @@
     http://mxr.mozilla.org/mozilla1.8/source/modules/libreg/src/reg.h)
 */
 
+var EXPORTED_SYMBOLS = ["getProfiles"];
+
 function log(aMessage)
 {
 	Components 

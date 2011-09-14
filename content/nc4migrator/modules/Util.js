@@ -121,6 +121,25 @@ var Util = {
     sourceDir.copyTo(destDir.parent, destDir.leafName);
   },
 
+  getRootDrives: function () {
+    const FileProtocolHandler = Cc["@mozilla.org/network/protocol;1?name=file"]
+      .getService(Ci.nsIFileProtocolHandler);
+    const RDF = Cc["@mozilla.org/rdf/rdf-services;1"].getService(Ci.nsIRDFService);
+    const NC_ROOT = "NC:FilesRoot",
+    NC_CHILD = "http://home.netscape.com/NC-rdf#child";
+
+    var rdfFiles = RDF.GetDataSource("rdf:files");
+    var enumerator = rdfFiles.GetTargets(NC_ROOT, NC_CHILD, true); // nsISimpleEnumerator
+    var drives = [];
+    while (enumerator.hasMoreElements()){
+      var resource = enumerator.getNext().QueryInterface(Ci.nsIRDFResource);
+      var file = FileProtocolHandler.getFileFromURLSpec(resource.Value);
+      drives.push(file);
+    }
+
+    return drives;
+  },
+
   readDirectory: function (directory) {
     directory = Util.getFile(directory);
 
@@ -181,7 +200,7 @@ var Util = {
 
       Cc["@mozilla.org/moz/jssubscript-loader;1"]
         .getService(Ci.mozIJSSubScriptLoader)
-        .loadSubScript("chrome://nc4migrator/content/eval.js", aContext);
+        .loadSubScript("chrome://nc4migrator/content/modules/eval.js", aContext);
 
       if (aContext[EVAL_ERROR])
         throw aContext[EVAL_ERROR];

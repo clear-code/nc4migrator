@@ -5,7 +5,7 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-Cu.import("chrome://nc4migrator/content/util.js");
+Cu.import("chrome://nc4migrator/content/modules/Util.js");
 
 function ServerSelector(incomingServerSettings,
                         smtpServerSettings) {

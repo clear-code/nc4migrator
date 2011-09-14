@@ -6,7 +6,7 @@
   const Cu = Components.utils;
   const Cr = Components.results;
 
-  const { Util } = Cu.import("chrome://nc4migrator/content/util.js", {});
+  const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);

@@ -40,10 +40,10 @@ var EXPORTED_SYMBOLS = ["MessengerMigrator"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
-const { Util } = Cu.import("chrome://nc4migrator/content/util.js", {});
-const { Preferences } = Cu.import("chrome://nc4migrator/content/Preferences.js", {});
-const { Services } = Cu.import("chrome://nc4migrator/content/Services.js", {});
-const { StringBundle } = Cu.import("chrome://nc4migrator/content/StringBundle.js", {});
+const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
+const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
+const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
+const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
 
 const Prefs = new Preferences("");
 

@@ -389,7 +389,11 @@ MessengerMigrator.prototype = {
       return null;
     }
     server.port = port;
-    server.isSecure = isSecure;
+    // server.isSecure = isSecure; isSecure is now readonly
+    if (isSecure) {
+      server.socketType = 3;    // nsMsgSocketType#SSL
+      server.authMethod = 3;    // nsMsgAuthMethod#passwordCleartext
+    }
 
     // Generate unique pretty name for the account. It is important that this function
     // is called here after all port settings are taken care of.

@@ -22,7 +22,12 @@
     get migrationProfile() $("migration-profile"),
     get migrationAccount() $("migration-account"),
     get migrationQuota() $("migration-quota"),
-    get migrationEstimatedMigrationTime() $("migration-estimated-migration-time")
+    get migrationEstimatedMigrationTime() $("migration-estimated-migration-time"),
+
+    get migratingProfile() $("migrating-profile"),
+    get migratingAccount() $("migrating-account"),
+
+    get migratedProfile() $("migrated-profile")
   };
 
   var Wizard = {
@@ -51,6 +56,32 @@
 
     onConfirmationPageShow: function () {
       this.setProfile(this.getSelectedProfile());
+    },
+
+    onMigratingPageShow: function () {
+      elements.migratingProfile.value = elements.migrationProfile.value;
+      elements.migratingAccount.value = elements.migrationAccount.value;
+
+      let { wizard } = elements;
+
+      wizard.canAdvance = false;
+      wizard.canRewind  = false;
+
+      if (!this.currentMigrator)
+        return Util.alert("Error", "Something wrong with this wizard", window);
+
+      this.currentMigrator.migrate(function onMigrated() {
+        wizard.canAdvance = true;
+        wizard.canRewind  = true;
+        wizard.advance(null); // proceed next page
+      }, function onError(x) {
+        Util.alert("Error", "Failed to migrate account: " + x, window);
+      });
+    },
+
+    onFinishPageShow: function () {
+      elements.wizard.canRewind  = false; // never back
+      elements.migratedProfile.value = elements.migrationProfile.value;
     },
 
     // ------------------------------------------------------------
@@ -111,14 +142,18 @@
       if (!ncProfile)
         return;
 
-      let migrator = MigrationManager.getMigratorForNcProfile(ncProfile);
+      let migrator
+            = this.currentMigrator
+            = MigrationManager.getMigratorForNcProfile(ncProfile);
 
       elements.migrationProfile.value = ncProfile.name;
       elements.migrationAccount.value = ncProfile.mailAddress;
 
       let quota = migrator.getLocalMailFolderQuota();
       elements.migrationQuota.value = Util.formatBytes(quota);
-    }
+    },
+
+    currentMigrator: null
   };
 
   exports.Wizard = Wizard;

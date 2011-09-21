@@ -193,6 +193,61 @@ MessengerMigrator.prototype = {
     }
   },
 
+  // asynchronous
+  migrate: function (onMigrated, onError, progressReporter) {
+    let progressReporterGiven = typeof progressReporter === "function";
+
+    function reportProgress(progress) {
+      if (progressReporterGiven) {
+        try {
+          progressReporter(progress);
+        } catch (x) {}
+      }
+    }
+
+    reportProgress(0);
+
+    this.resetState();
+
+    try {
+      this.proceedWithMigration();
+    } catch (x) {
+      return onError(x);
+    }
+
+    var identity = Services.accountManager.createIdentity();
+    this.migrateIdentity(identity);
+
+    var smtpServer = Services.smtpService.createSmtpServer();
+    this.migrateSmtpServer(smtpServer);
+
+    try {
+      Services.smtpService.defaultServer = smtpServer;
+    } catch (x) {}
+
+    if (this.m_oldMailType === this.IMAP_4X_MAIL_TYPE) {
+      var identities = this.migrateImapAccounts(identity);
+
+      try {
+        this.migrateLocalMailAccount();
+      } catch (x) {
+        return onError(new Error("Failed to migrate local mail account " + x));
+      }
+
+    } else {
+      return onError(new Error("Trying to migrate a non-imap account"));
+    }
+
+    identity.clearAllValues();
+
+    if (identities)
+      identities.forEach(this.makeSpecialFolderLocal, this);
+
+    reportProgress(1);          // finish
+
+    onMigrated();
+  },
+
   // Entry Point
   upgradePrefs: function () {
     // Reset some control vars, necessary in turbo mode.
@@ -562,7 +617,7 @@ MessengerMigrator.prototype = {
     return localFoldersServer;
   },
 
-  migrateLocalMailAccount: function () {
+  migrateLocalMailAccount: function (onProgress) {
     // create the server
     // "none" is the type we use for migrating 4.x "Local Mail"
     var localFoldersServer = this.getLocalFolderServer();
@@ -582,8 +637,6 @@ MessengerMigrator.prototype = {
              oldMailDir && oldMailDir.path, mailDir && mailDir.path);
 
     if (oldMailDir) {
-      // now copy mails in old local folders
-      mailDir.launch();
       // we need to set this to <profile>/Mail/Local Folders, because that's where
       // the 4.x "Local Mail" (when using imap) got copied.
       // it would be great to use the server key, but we don't know it
@@ -593,7 +646,7 @@ MessengerMigrator.prototype = {
       localFolderFile.append(name);
       if (!localFolderFile.exists())
         localFolderFile.create(0, 0644);
-      LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd");
+      LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd", onProgress);
     }
 
     // TODO: Implement this!
@@ -762,7 +815,7 @@ var LocalFolderMigrator = {
     });
   },
 
-  migrateTo: function (source, dest, newName) {
+  migrateTo: function (source, dest, newName, onProgress) {
     var sourceDir = Util.getFile(source);
     var destDir   = Util.getFile(dest);
 

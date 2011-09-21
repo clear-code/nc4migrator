@@ -18,8 +18,8 @@
         >
 
   <wizardpage pageid="profile-list-page"
-              next="confirm-page"
               id="profile-list-page"
+              next="confirm-page"
               onpageshow="Wizard.onProfileListPageShow();"
               onpageadvanced="return Wizard.ensureProfileSelected();">
     <description>&wizard.profileList.description;</description>
@@ -28,6 +28,7 @@
 
   <wizardpage pageid="confirm-page"
               id="confirm-page"
+              next="migrating-page"
               onpageshow="Wizard.onConfirmationPageShow();">
     <description>&wizard.migrationConfirmation.description;</description>
     <groupbox>
@@ -57,6 +58,41 @@
         </rows>
       </grid>
     </groupbox>
+  </wizardpage>
+
+  <wizardpage pageid="migrating-page"
+              id="migrating-page"
+              next="finish-page"
+              onpageshow="Wizard.onMigratingPageShow();">
+    <description>&wizard.migrationProgress.description;</description>
+    <groupbox>
+      <grid flex="1">
+        <columns>
+          <column  />
+          <column flex="1" />
+        </columns>
+        <rows>
+          <row>
+            <description>&wizard.profile;</description>
+            <description id="migrating-profile" />
+          </row>
+          <row>
+            <description>&wizard.account;</description>
+            <description id="migrating-account" />
+          </row>
+        </rows>
+      </grid>
+    </groupbox>
+  </wizardpage>
+
+  <wizardpage pageid="finish-page"
+              id="finish-page"
+              onpageshow="Wizard.onFinishPageShow();">
+    <hbox align="center">
+      <description>&wizard.migrationFinished.descriptionHead;</description>
+      <description id="migrated-profile" />
+      <description>&wizard.migrationFinished.descriptionTail;</description>
+    </hbox>
   </wizardpage>
 
   <script type="application/x-javascript" src="./migration-wizard.js" />

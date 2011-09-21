@@ -21,4 +21,6 @@
 
 <!-- Migration Finished -->
 
-<!ENTITY wizard.migrationProgress.description "次のアカウントの移行が完了しました。">
+<!ENTITY wizard.migrationFinished.descriptionHead "Netscape Messenger のプロファイル「">
+<!ENTITY wizard.migrationFinished.descriptionTail "」の移行が完了しました。">
+

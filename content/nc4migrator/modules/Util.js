@@ -192,7 +192,7 @@ var Util = {
     var values = Array.slice(arguments, 1);
 
     return formatString.replace(/%s/g, function () {
-      return (values.shift() || "");
+      return Util.or(values.shift(), "");
     });
   },
 

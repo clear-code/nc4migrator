@@ -8,6 +8,8 @@
 
   const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
   const { MigrationManager } = Cu.import('chrome://nc4migrator/content/modules/MigrationManager.js', {});
+  const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
+  const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);
@@ -39,6 +41,45 @@
     },
 
     onFinish: function () {
+      let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
+            .getService(Ci.nsIPromptService);
+
+      const BUTTON_RESTART  = 0;
+      const BUTTON_CONTINUE = 1;
+      const BUTTON_CANECL   = 2;
+
+      let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
+            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING  +
+            prompts.BUTTON_POS_2 * prompts.BUTTON_TITLE_CANCEL;
+
+      let button = prompts.confirmEx(
+        null,
+        "アカウントの反映",
+        <![CDATA[
+アカウント情報を反映するためには Thunderbird を再起動する必要があります。
+続けてアカウントをインポートするには [続けてアカウントをインポート]をクリックします。
+インポート処理を終了するためには[キャンセル]をクリックします。
+]]>.toString(),
+        flags,
+        "再起動", "続けてアカウントをインポート", "",
+        null, {}
+      );
+
+      switch (button) {
+      case BUTTON_RESTART:
+        Util.restartApplication();
+        break;
+      case BUTTON_CONTINUE:
+        setTimeout(function () {
+          MigrationManager.beginWizard();
+        }, 100);
+        elements.wizard.calcel();
+        break;
+      case BUTTON_CANECL:
+        elements.wizard.cancel();
+        break;
+      }
+
       return true;
     },
 
@@ -105,7 +146,10 @@
           prettyName, name
         );
 
-        item.disabled = ncProfile.isImported();
+        // imported mark
+        if (ncProfile.isImported()) {
+          item.setAttribute("data-imported", "true");
+        }
       });
 
       elements.migrationProfileList.selectedIndex = 0;

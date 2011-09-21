@@ -17,3 +17,4 @@ setService("userInfo", "@mozilla.org/userinfo;1", "nsIUserInfo");
 setService("prefBranch", "@mozilla.org/preferences-service;1", "nsIPrefBranch2");
 setService("imapProtocolInfo", "@mozilla.org/messenger/protocol/info;1?type=imap", "nsIMsgProtocolInfo");
 setService("sBundleService", "@mozilla.org/intl/stringbundle;1", "nsIStringBundleService");
+setService("prompts", "@mozilla.org/embedcomp/prompt-service;1", "nsIPromptService");

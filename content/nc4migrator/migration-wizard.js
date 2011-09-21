@@ -50,7 +50,6 @@
     },
 
     onConfirmationPageShow: function () {
-      alert("Selected Item: " + this.getSelectedProfile());
       this.setProfile(this.getSelectedProfile());
     },
 
@@ -100,6 +99,18 @@
       }
 
       return null;
+    },
+
+    ensureProfileSelected: function () {
+      let profileSelected =  !!elements.migrationProfileList.selectedItem;
+
+      if (!profileSelected) {
+        Util.alert("Select a profile",
+                   "Please select a profile",
+                   window);
+      }
+
+      return profileSelected;
     },
 
     setProfile: function (ncProfile) {

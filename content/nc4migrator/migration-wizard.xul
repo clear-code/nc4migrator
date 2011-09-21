@@ -20,7 +20,8 @@
   <wizardpage pageid="profile-list-page"
               next="confirm-page"
               id="profile-list-page"
-              onpageshow="Wizard.onProfileListPageShow();">
+              onpageshow="Wizard.onProfileListPageShow();"
+              onpageadvanced="return Wizard.ensureProfileSelected();">
     <description>&wizard.profileList.description;</description>
     <radiogroup id="migration-profile-list" />
   </wizardpage>

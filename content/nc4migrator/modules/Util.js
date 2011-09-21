@@ -245,6 +245,12 @@ var Util = {
   // DOM
   // ============================================================
 
+  alert: function (aTitle, aMessage, aWindow) {
+    let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
+          .getService(Ci.nsIPromptService);
+    prompts.alert(aWindow, aTitle, aMessage);
+  },
+
   getElementCreator: function (doc) {
     return function elementCreator(name, attrs, children) {
       let elem = doc.createElement(name);

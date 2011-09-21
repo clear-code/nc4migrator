@@ -47,7 +47,7 @@
             <description id="migration-account" />
           </row>
           <!-- Do not show -->
-          <row id="migration-quota-determined">
+          <row>
             <description>&wizard.quota;</description>
             <deck id="migration-quota">
               <description id="migration-quota-undefermined" value="&wizard.quota.undetermined;" />

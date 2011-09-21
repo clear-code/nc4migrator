@@ -191,11 +191,8 @@
 
     setProfile: function (ncProfile) {
       if (!ncProfile) {
-        let deferred = new Deferred();
-        Deferred.next(function() {
-          deferred.call();
+        return Deferred.next(function() {
         });
-        return deferred;
       }
 
       let migrator
@@ -211,10 +208,10 @@
                 let deck = elements.migrationQuotaDeck;
                 if (aResult.complete) {
                   elements.migrationQuotaDetermined.value = Util.formatBytes(aResult.size);
-                  deck.selectedItem = elements.migrationQuotaDetermined;
+                  deck.selectedIndex = 1;
                 } else {
                   elements.migrationQuotaDeterminedOver.value = Util.formatBytes(aResult.size);
-                  deck.selectedItem = elements.migrationQuotaDeterminedOver.parentNode;
+                  deck.selectedIndex = 2;
                 }
               });
     },

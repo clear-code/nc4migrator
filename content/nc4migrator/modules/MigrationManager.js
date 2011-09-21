@@ -8,6 +8,7 @@ const Nsreg = Cu.import("chrome://nc4migrator/content/modules/nsreg.js", {});
 
 const { Util } = Cu.import('chrome://nc4migrator/content/modules/Util.js', {});
 const { MessengerMigrator } = Cu.import('chrome://nc4migrator/content/modules/MessengerMigrator.js', {});
+const { StringBundle } = Cu.import('chrome://nc4migrator/content/modules/StringBundle.js', {});
 const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
 const Prefs = new Preferences("");
 
@@ -81,7 +82,23 @@ var MigrationManager = {
   get defaultImapServers() (Prefs.get('extensions.nc4migrator.defaultImapServers') || "").split(","),
 
   beginMigration: function () {
-    this.beginWizard();
+    const { getDiskSpace } = Cu.import('chrome://nc4migrator/content/modules/diskspace.win32.js', {});
+
+    let targetDirectory = Util.getSpecialDirectory("ProfD");
+    var diskSpaceInByte = getDiskSpace(targetDirectory);
+    var diskSpaceInGB = diskSpaceInByte / (1024 * 1024 * 1024);
+
+    var leastAvailableDiskspace = Prefs.get('extensions.nc4migrator.leastAvailableDiskspace');
+
+    if (diskSpaceInGB < leastAvailableDiskspace) {
+      let args = [Util.formatBytes(diskSpaceInByte), leastAvailableDiskspace + " GB"];
+      Util.alert(
+        StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
+        StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)
+      );
+    } else {
+      this.beginWizard();
+    }
   },
 
   beginWizard: function () {

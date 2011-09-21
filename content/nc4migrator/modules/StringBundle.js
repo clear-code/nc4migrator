@@ -17,3 +17,4 @@ function defineLazyStringBundle(target, name, path) {
 
 defineLazyStringBundle(StringBundle, "imapMsgs", "chrome://messenger/locale/imapMsgs.properties");
 defineLazyStringBundle(StringBundle, "messenger", "chrome://messenger/locale/messenger.properties");
+defineLazyStringBundle(StringBundle, "nc4migrator", "chrome://nc4migrator/locale/nc4migrator.properties");

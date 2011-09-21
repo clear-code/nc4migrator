@@ -51,7 +51,7 @@ function MessengerMigrator(prefObject, options) {
   options = options || {};
   // prefObject, profile
   this.setupN4Pref(prefObject);
-  this.profile = options.profile || null;
+  this.profileDirectory = options.profileDirectory || null;
   this.imapServersFilter = options.imapServersFilter || null;
 }
 
@@ -475,10 +475,9 @@ MessengerMigrator.prototype = {
   mLocalFoldersHostname: "Local Folders",
 
   get n4ProfileDirectory() {
-    if (!this.profile)
+    if (!this.profileDirectory)
       return null;
-    Util.log("Profile Path :: " + this.profile.path);
-    return Util.openFile(this.profile.path);
+    return this.profileDirectory;
   },
 
   N4_DEFAULT_MAIL_DIRECTORY_NAME: "Mail",
@@ -496,6 +495,23 @@ MessengerMigrator.prototype = {
     }
 
     return null;
+  },
+
+  getLocalMailFolderQuota: function () {
+    let bytes = 0;
+    let mailDir = this.n4MailDirectory;
+
+    Util.DEBUG = true;
+    Util.log("mailDir: " + (mailDir ? mailDir.path : "null!!!"));
+
+    if (mailDir) {
+      Util.traverseDirectory(mailDir, function (file) {
+        Util.log("trailing: "+ file.path);
+        bytes += file.fileSize;
+      });
+    }
+
+    return bytes;
   },
 
   getLocalFolderServer: function () {
@@ -669,11 +685,6 @@ MessengerMigrator.prototype = {
 
   get migrationTargetName() this.getN4Pref("mail.identity.useremail", ""),
   get migrationTargetAddress() this.getN4Pref("mail.identity.username", ""),
-
-  // TODO: implement this
-  getMailFolderQuota: function () {
-    return 1024;
-  }
 };
 
 var IncomingServerTools = {

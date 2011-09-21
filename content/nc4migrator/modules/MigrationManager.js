@@ -26,10 +26,6 @@ NcProfile.prototype = {
     return false;
   },
 
-  getMailFolderQuota: function () {
-    return 1024;
-  },
-
   getPrefsObject: function () {
     var prefsFile = Util.getFile(this.profileDirectory);
     prefsFile.append('prefs.js');
@@ -96,7 +92,7 @@ var MigrationManager = {
     );
   },
 
-  migratePrefsFrom: function (ncProfile) {
+  getMigratorForNcProfile: function (ncProfile) {
     if (!(ncProfile instanceof NcProfile) ||
         !ncProfile.prefsObject)
       throw new Error("Invalid profile given. Cannot proceed migration.");
@@ -104,16 +100,26 @@ var MigrationManager = {
     let defaultImapServers = this.defaultImapServers;
 
     var migrator = new MessengerMigrator(ncProfile.prefsObject, {
-      profile: NcProfile.profile,
+      profileDirectory: ncProfile.profileDirectory,
       imapServersFilter: function (servers) {
         return servers.filter(function (server) defaultImapServers.indexOf(server) >= 0);
       }
     });
 
-    migrator.upgradePrefs();
+    return migrator;
+  },
 
+  migratePrefsFrom: function (ncProfile) {
+    let migrator = this.getMigratorForNcProfile(ncProfile);
+    migrator.upgradePrefs();
+  },
+
+  verityAccounts: function () {
     var accountUtils = {};
-    Util.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', accountUtils);
+    Util.loadSubScriptInEnvironment(
+      'chrome://messenger/content/accountUtils.js',
+      accountUtils
+    );
     accountUtils.verifyAccounts();
   }
 };

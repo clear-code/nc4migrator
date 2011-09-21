@@ -153,6 +153,23 @@ var Util = {
     return null;
   },
 
+  traverseDirectory: function (directory, visitor) {
+    if (directory.isDirectory()) {
+      let entries = directory.directoryEntries;
+      while (entries.hasMoreElements()) {
+        Util.traverseDirectory(
+          entries.getNext().QueryInterface(Ci.nsIFile),
+          visitor
+        );
+      }
+    } else {
+      visitor(directory);
+    }
+  },
+
+  // getQuota: function () {
+  // },
+
   // Get file for file-1, file-2, file-3, ...
   // Currently, for directory only (do not consider suffixes)
   getIdenticalFileFor: function (originalFile) {

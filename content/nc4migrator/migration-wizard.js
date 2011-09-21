@@ -111,9 +111,13 @@
       if (!ncProfile)
         return;
 
+      let migrator = MigrationManager.getMigratorForNcProfile(ncProfile);
+
       elements.migrationProfile.value = ncProfile.name;
       elements.migrationAccount.value = ncProfile.mailAddress;
-      elements.migrationQuota.value   = ncProfile.getMailFolderQuota() + " MB";
+
+      let quota = migrator.getLocalMailFolderQuota();
+      elements.migrationQuota.value = Util.format("%s KB (%s bytes)", (quota / 1024).toFixed(1), quota);
     }
   };
 

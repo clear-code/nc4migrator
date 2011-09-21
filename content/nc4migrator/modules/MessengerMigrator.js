@@ -466,7 +466,7 @@ MessengerMigrator.prototype = {
       Services.accountManager.defaultAccount = account;
 
     // Set check for new mail option for default account to TRUE
-    server.loginAtStartUp = true;
+    server.loginAtStartUp = false; // XXX: DEBUG
 
     return copiedIdentity;
   },
@@ -665,6 +665,14 @@ MessengerMigrator.prototype = {
     } else {
       throw new Error("NS_ERROR_UNEXPECTED");
     }
+  },
+
+  get migrationTargetName() this.getN4Pref("mail.identity.useremail", ""),
+  get migrationTargetAddress() this.getN4Pref("mail.identity.username", ""),
+
+  // TODO: implement this
+  getMailFolderQuota: function () {
+    return 1024;
   }
 };
 

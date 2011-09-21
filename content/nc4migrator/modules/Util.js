@@ -204,7 +204,7 @@ var Util = {
     var notations = ["", "K", "M", "G", "T", "P", "E", "Z", "Y"];
     var number = bytes;
 
-    while (number > base && notations.length > 1) {
+    while (number >= base && notations.length > 1) {
       number /= base;
       notations.shift();
     }

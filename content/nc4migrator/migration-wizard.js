@@ -57,14 +57,6 @@
     // Functions
     // ------------------------------------------------------------
 
-    // elements.migrationProfileList.appendChild(
-    //   createElement("radio", {
-    //     label: name,
-    //     value: name,
-    //     disabled: [true, false][Date.now % 2 ]
-    //   })
-    // );
-
     get ncProfiles() {
       if (!this._ncProfiles)
         this._ncProfiles = MigrationManager.ncProfiles;

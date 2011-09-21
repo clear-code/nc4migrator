@@ -32,10 +32,11 @@ var Util = {
 
   getFile: function (aTarget) {
     let file;
-    if (aTarget instanceof Ci.nsIFile)
-      file = aTarget;
-    else
+    if (aTarget instanceof Ci.nsIFile) {
+      file = aTarget.clone();
+    } else {
       file = Util.openFile(aTarget);
+    }
 
     return file;
   },
@@ -67,8 +68,6 @@ var Util = {
 
     let out = {};
     converter.readString(fileStream.available(), out);
-
-    converter();
     fileStream.close();
 
     return out.value;
@@ -183,6 +182,15 @@ var Util = {
   log: function () {
     if (this.DEBUG)
       Application.console.log(Util.format.apply(Util, arguments));
+  },
+
+  _loader: null,
+  loadSubScriptInEnvironment: function (path, context) {
+    if (!this._loader)
+      this._loader = Cc["@mozilla.org/moz/jssubscript-loader;1"]
+      .getService(Ci.mozIJSSubScriptLoader);
+    this._loader.loadSubScript("chrome://nc4migrator/content/modules/eval.js", context);
+    return context;
   },
 
   evalInContext: function (aCode, aContext) {

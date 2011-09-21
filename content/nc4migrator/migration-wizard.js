@@ -84,6 +84,8 @@
 
         item.disabled = ncProfile.isImported();
       });
+
+      elements.migrationProfileList.selectedIndex = 0;
     },
 
     getSelectedProfile: function () {

@@ -274,6 +274,36 @@ var Util = {
     return self;
   },
 
+  restartApplication: function () {
+    const nsIAppStartup = Ci.nsIAppStartup;
+
+    let os         = Cc["@mozilla.org/observer-service;1"].getService(Ci.nsIObserverService);
+    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(Ci.nsISupportsPRBool);
+
+    os.notifyObservers(cancelQuit, "quit-application-requested", null);
+    if (cancelQuit.data)
+      return;
+
+    os.notifyObservers(null, "quit-application-granted", null);
+    let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
+    let windows = wm.getEnumerator(null);
+
+    while (windows.hasMoreElements()) {
+      let win = windows.getNext();
+      if (("tryToClose" in win) && !win.tryToClose())
+        return;
+    }
+
+    Cc["@mozilla.org/toolkit/app-startup;1"].getService(nsIAppStartup)
+      .quit(nsIAppStartup.eRestart | nsIAppStartup.eAttemptQuit);
+  },
+
+  getMainWindow: function () {
+    return Cc["@mozilla.org/appshell/window-mediator;1"]
+      .getService(Ci.nsIWindowMediator)
+      .getMostRecentWindow("mail:3pane");
+  },
+
   // ============================================================
   // DOM
   // ============================================================

@@ -102,7 +102,7 @@ var MigrationManager = {
   },
 
   beginWizard: function () {
-    window.openDialog(
+    Util.getMainWindow().openDialog(
       "chrome://nc4migrator/content/migration-wizard.xul",
       "nc4migrator:migrationWizard",
       "chrome=yes,titlebar=yes,dialog=yes,modal=yes,resizable=yes"

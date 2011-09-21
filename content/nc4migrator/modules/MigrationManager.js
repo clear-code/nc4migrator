@@ -1,21 +1,35 @@
-var EXPORTED_SYMBOLS = "Migrator";
+var EXPORTED_SYMBOLS = ["MigrationManager"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
 
+const Nsreg = Cu.import("chrome://nc4migrator/content/modules/nsreg.js", {});
+
 const { Util } = Cu.import('chrome://nc4migrator/content/modules/Util.js', {});
-const { Nsreg } = Cu.import("chrome://nc4migrator/content/modules/nsreg.js", {});
 const { MessengerMigrator } = Cu.import('chrome://nc4migrator/content/modules/MessengerMigrator.js', {});
 const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
 const Prefs = new Preferences("");
 
-function NcProfile(profileDirectory) {
+function NcProfile(name, profileDirectory) {
+  this.name = name;
   this.profileDirectory = profileDirectory;
   this.prefsObject = this.getPrefsObject();
 }
 
 NcProfile.prototype = {
+  get mailAddress() {
+    return this.prefsObject["mail.identity.useremail"] || null;
+  },
+
+  isImported: function () {
+    return false;
+  },
+
+  getMailFolderQuota: function () {
+    return 1024;
+  },
+
   getPrefsObject: function () {
     var prefsFile = Util.getFile(this.profileDirectory);
     prefsFile.append('prefs.js');
@@ -52,12 +66,19 @@ NcProfile.prototype = {
 };
 
 var MigrationManager = {
-  get profiles() Nsreg.getProfiles(),
+  get profiles() Nsreg.getProfiles(), // { path, name }
   get username() Util.getEnv("username", Util.getEnv("USER")),
 
   get ncProfiles() {
     var profiles = Nsreg.getProfiles();
-    return profiles.map(function (profile) new NcProfile(profile));
+    return profiles.map(function (profile) {
+      try {
+        return new NcProfile(profile.name, Util.getFile(profile.path));
+      } catch (x) {
+        Util.log("ncProfiles: " + x);
+        return null;
+      }
+    }).filter(function (ncProfile) ncProfile);
   },
 
   // this preference value limits target imap servers which will be migrated
@@ -94,9 +115,5 @@ var MigrationManager = {
     var accountUtils = {};
     Util.loadSubScriptInEnvironment('chrome://messenger/content/accountUtils.js', accountUtils);
     accountUtils.verifyAccounts();
-  },
-
-  getMailAddressForPrefsObject: function (prefsObject) {
-    return prefsObject["mail.identity.useremail"] || null;
   }
 };

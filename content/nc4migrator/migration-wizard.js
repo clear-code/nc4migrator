@@ -7,6 +7,7 @@
   const Cr = Components.results;
 
   const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
+  const { MigrationManager } = Cu.import('chrome://nc4migrator/content/modules/MigrationManager.js', {});
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);
@@ -65,35 +66,49 @@
     //   })
     // );
 
-    profiles: ["hogehoge", "hugahuga", "herohero"],
+    get ncProfiles() {
+      if (!this._ncProfiles)
+        this._ncProfiles = MigrationManager.ncProfiles;
+      return this._ncProfiles;
+    },
+
     updateProfileList: function () {
-      this.profiles.forEach(function (profile) {
-        var name = profile;
+      Util.DEBUG = true;
+
+      this.ncProfiles.forEach(function (ncProfile, i) {
+        var name = ncProfile.name;
+        var prettyName = name + " <" + ncProfile.mailAddress + ">";
 
         var item = elements.migrationProfileList.appendItem(
-          name, name
+          prettyName, name
         );
 
-        item.disabled = [true, false][Date.now % 2 ];
-      }, this);
+        item.disabled = ncProfile.isImported();
+      });
     },
 
     getSelectedProfile: function () {
-      var selectedItem = elements.migrationProfileList.selectedItem;
-      return selectedItem ? selectedItem.getAttribute("value") : null;
-    },
-
-    setProfile: function (profile) {
-      if (!profile)
+      let selectedItem = elements.migrationProfileList.selectedItem;
+      if (!selectedItem)
         return;
 
-      var name    = profile;
-      var account = profile;
-      var quota   = profile;
+      let name = selectedItem.getAttribute("value");
 
-      elements.migrationProfile.value = name;
-      elements.migrationAccount.value = account;
-      elements.migrationQuota.value = quota;
+      for (let [, profile] in Iterator(this.ncProfiles)) {
+        if (profile.name === name)
+          return profile;
+      }
+
+      return null;
+    },
+
+    setProfile: function (ncProfile) {
+      if (!ncProfile)
+        return;
+
+      elements.migrationProfile.value = ncProfile.name;
+      elements.migrationAccount.value = ncProfile.mailAddress;
+      elements.migrationQuota.value   = ncProfile.getMailFolderQuota() + " MB";
     }
   };
 

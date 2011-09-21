@@ -501,13 +501,10 @@ MessengerMigrator.prototype = {
     let bytes = 0;
     let mailDir = this.n4MailDirectory;
 
-    Util.DEBUG = true;
-    Util.log("mailDir: " + (mailDir ? mailDir.path : "null!!!"));
-
     if (mailDir) {
       Util.traverseDirectory(mailDir, function (file) {
-        Util.log("trailing: "+ file.path);
-        bytes += file.fileSize;
+        if (!file.isDirectory())
+          bytes += file.fileSize;
       });
     }
 

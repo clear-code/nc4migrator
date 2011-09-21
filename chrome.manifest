@@ -6,3 +6,6 @@ contract @clear-code.com/nc4migrator/startup;1 {1db5ecc0-8615-11dd-ad8b-0800200c
 category profile-after-change  StartupService @clear-code.com/nc4migrator/startup;1
 
 overlay	chrome://messenger/content/messenger.xul	chrome://nc4migrator/content/messenger.xul
+
+resource nc4migrator-modules modules/
+

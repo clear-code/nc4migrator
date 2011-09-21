@@ -4,12 +4,12 @@ const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cu = Components.utils;
 
-const Nsreg = Cu.import("chrome://nc4migrator/content/modules/nsreg.js", {});
+const Nsreg = Cu.import("resource://nc4migrator-modules/nsreg.js", {});
 
-const { Util } = Cu.import('chrome://nc4migrator/content/modules/Util.js', {});
-const { MessengerMigrator } = Cu.import('chrome://nc4migrator/content/modules/MessengerMigrator.js', {});
-const { StringBundle } = Cu.import('chrome://nc4migrator/content/modules/StringBundle.js', {});
-const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
+const { Util } = Cu.import('resource://nc4migrator-modules/Util.js', {});
+const { MessengerMigrator } = Cu.import('resource://nc4migrator-modules/MessengerMigrator.js', {});
+const { StringBundle } = Cu.import('resource://nc4migrator-modules/StringBundle.js', {});
+const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
 const Prefs = new Preferences("");
 
 function NcProfile(name, profileDirectory) {
@@ -82,10 +82,10 @@ var MigrationManager = {
   get defaultImapServers() (Prefs.get('extensions.nc4migrator.defaultImapServers') || "").split(","),
 
   beginMigration: function () {
-    const { getDiskSpace } = Cu.import('chrome://nc4migrator/content/modules/diskspace.win32.js', {});
+//    const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
 
     let targetDirectory = Util.getSpecialDirectory("ProfD");
-    var diskSpaceInByte = getDiskSpace(targetDirectory);
+    var diskSpaceInByte = 10;//getDiskSpace(targetDirectory);
     var diskSpaceInGB = diskSpaceInByte / (1024 * 1024 * 1024);
 
     var leastAvailableDiskspace = Prefs.get('extensions.nc4migrator.leastAvailableDiskspace');
@@ -96,6 +96,7 @@ var MigrationManager = {
         StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
         StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)
       );
+      this.beginWizard();
     } else {
       this.beginWizard();
     }

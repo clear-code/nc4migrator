@@ -33,9 +33,6 @@ const  kCID  = Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}');
 const  kID   = '@clear-code.com/nc4migrator/startup;1';
 const  kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
-Cu.import('chrome://nc4migrator/content/util.js');
-Cu.import('chrome://nc4migrator/content/messenger-migrator.js');
-
 function StartupService() {
 }
 
@@ -82,7 +79,7 @@ StartupService.prototype = {
       return;
     }
 
-    var username = Util.getEnv("username", Util.getEnv("USER"));
+    var username = this.Util.getEnv("username", this.Util.getEnv("USER"));
 
     var ignoreCase = this.getPref('extensions.nc4migrator.profileDetection.ignoreCase');
     if (ignoreCase) username = username.toLowerCase();
@@ -129,9 +126,31 @@ StartupService.prototype = {
   {
     if (!this._nsreg) {
       this._nsreg = {};
-      Cu.import("chrome://nc4migrator/content/modules/nsreg.js", this._nsreg);
+      Cu.import("resource://nc4migrator-modules/nsreg.js", this._nsreg);
     }
     return this._nsreg;
+  },
+  _nsreg : null,
+
+  get Util()
+  {
+    if (!this._Util) {
+      this._Util = {};
+      Cu.import("resource://nc4migrator-modules/Util.js", this._Util);
+      this._Util = this._Util.Util;
+    }
+    return this._Util;
+  },
+  _nsreg : null,
+
+  get MessengerMigrator()
+  {
+    if (!this._MessengerMigrator) {
+      this._MessengerMigrator = {};
+      Cu.import("resource://nc4migrator-modules/MessengerMigrator.js", this._MessengerMigrator);
+      this._MessengerMigrator = this._MessengerMigrator.MessengerMigrator;
+    }
+    return this._MessengerMigrator;
   },
   _nsreg : null,
 
@@ -166,7 +185,7 @@ StartupService.prototype = {
     var self = this;
     var prefsObject = this.getPrefsObjectForProfile(aProfile);
 
-    Util.log(JSON.stringify(prefsObject, null, 2));
+    this.Util.log(JSON.stringify(prefsObject, null, 2));
 
     if (!prefsObject) {
       this.alert(
@@ -178,7 +197,7 @@ StartupService.prototype = {
 
     let defaultImapServers = (this.getPref('extensions.nc4migrator.defaultImapServers') || "").split(",");
 
-    var migrator = new MessengerMigrator(prefsObject, {
+    var migrator = new this.MessengerMigrator(prefsObject, {
       profile: aProfile,
       imapServersFilter: function (servers) {
         return servers.filter(function (server) defaultImapServers.indexOf(server) >= 0);
@@ -240,12 +259,12 @@ StartupService.prototype = {
             );
           })
           .join('');
-        Util.evalInContext(decoded, sandbox);
+        this.Util.evalInContext(decoded, sandbox);
       }
     }
 
     var contents = this.readFrom(prefsFile, 'Shift_JIS');
-    Util.evalInContext(contents, sandbox);
+    this.Util.evalInContext(contents, sandbox);
 
     return prefsObject;
   },

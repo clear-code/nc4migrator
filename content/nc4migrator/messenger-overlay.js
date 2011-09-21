@@ -3,7 +3,7 @@ var Nc4Migrator = (function () {
 
   const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
-  const { MigrationManager } = Cu.import('chrome://nc4migrator/content/modules/MigrationManager.js', {});
+  const { MigrationManager } = Cu.import('resource://nc4migrator-modules/MigrationManager.js', {});
 
   exports.beginMigration = function () {
     MigrationManager.beginMigration();

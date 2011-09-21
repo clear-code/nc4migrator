@@ -40,11 +40,11 @@ var EXPORTED_SYMBOLS = ["MessengerMigrator"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
-const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
-const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
-const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
-const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
-const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
+const { Util } = Cu.import("resource://nc4migrator-modules/Util.js", {});
+const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
+const { Services } = Cu.import("resource://nc4migrator-modules/Services.js", {});
+const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
+const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
 const Prefs = new Preferences("");
 
@@ -563,7 +563,7 @@ MessengerMigrator.prototype = {
              .next(function(aComplete) {
                return {
                  size     : totalSize,
-                 complete : aComplete;
+                 complete : aComplete
                }
              });
   },

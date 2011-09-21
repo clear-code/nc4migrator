@@ -2,7 +2,7 @@ var EXPORTED_SYMBOLS = ["StringBundle"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 const { XPCOMUtils } = Cu.import("resource://gre/modules/XPCOMUtils.jsm", {});
-const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
+const { Services } = Cu.import("resource://nc4migrator-modules/Services.js", {});
 
 var StringBundle = {};
 

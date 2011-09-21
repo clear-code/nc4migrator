@@ -5,7 +5,7 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
-const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
+const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
 const Application = Cc['@mozilla.org/steel/application;1']
   .getService(Ci.steelIApplication);
@@ -273,7 +273,7 @@ var Util = {
     if (!this._loader)
       this._loader = Cc["@mozilla.org/moz/jssubscript-loader;1"]
       .getService(Ci.mozIJSSubScriptLoader);
-    this._loader.loadSubScript("chrome://nc4migrator/content/modules/eval.js", context);
+    this._loader.loadSubScript("resource://nc4migrator-modules/eval.js", context);
     return context;
   },
 
@@ -292,7 +292,7 @@ var Util = {
 
       Cc["@mozilla.org/moz/jssubscript-loader;1"]
         .getService(Ci.mozIJSSubScriptLoader)
-        .loadSubScript("chrome://nc4migrator/content/modules/eval.js", aContext);
+        .loadSubScript("resource://nc4migrator-modules/eval.js", aContext);
 
       if (aContext[EVAL_ERROR])
         throw aContext[EVAL_ERROR];

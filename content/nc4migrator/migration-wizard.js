@@ -6,11 +6,11 @@
   const Cu = Components.utils;
   const Cr = Components.results;
 
-  const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
-  const { MigrationManager } = Cu.import('chrome://nc4migrator/content/modules/MigrationManager.js', {});
-  const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
-  const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
-  const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
+  const { Util } = Cu.import("resource://nc4migrator-modules/Util.js", {});
+  const { MigrationManager } = Cu.import('resource://nc4migrator-modules/MigrationManager.js', {});
+  const { Services } = Cu.import("resource://nc4migrator-modules/Services.js", {});
+  const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
+  const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);

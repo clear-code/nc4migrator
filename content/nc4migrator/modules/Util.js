@@ -154,16 +154,18 @@ var Util = {
   },
 
   traverseDirectory: function (directory, visitor) {
+    try {
+      visitor(directory);
+    } catch (x) {
+      Util.log("traverseDirectory: " + x);
+    }
+
     if (directory.isDirectory()) {
       let entries = directory.directoryEntries;
       while (entries.hasMoreElements()) {
-        Util.traverseDirectory(
-          entries.getNext().QueryInterface(Ci.nsIFile),
-          visitor
-        );
+        let nextDir = entries.getNext().QueryInterface(Ci.nsIFile);
+        Util.traverseDirectory(nextDir, visitor);
       }
-    } else {
-      visitor(directory);
     }
   },
 

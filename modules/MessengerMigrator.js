@@ -557,8 +557,8 @@ MessengerMigrator.prototype = {
     let totalSize = 0;
     let mailDir = this.n4MailDirectory;
     return Util.deferredTraverseDirectory(mailDir, function(aFile) {
-             if (!file.isDirectory())
-               totalSize += file.fileSize;
+             if (!aFile.isDirectory())
+               totalSize += aFile.fileSize;
            }, aTimeout)
              .next(function(aComplete) {
                return {

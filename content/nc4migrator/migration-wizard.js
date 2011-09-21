@@ -117,7 +117,7 @@
       elements.migrationAccount.value = ncProfile.mailAddress;
 
       let quota = migrator.getLocalMailFolderQuota();
-      elements.migrationQuota.value = Util.format("%s KB (%s bytes)", (quota / 1024).toFixed(1), quota);
+      elements.migrationQuota.value = Util.formatBytes(quota);
     }
   };
 

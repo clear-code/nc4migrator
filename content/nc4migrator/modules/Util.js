@@ -198,6 +198,20 @@ var Util = {
     });
   },
 
+  formatBytes: function (bytes, base) {
+    base = base || 1024;
+
+    var notations = ["", "K", "M", "G", "T", "P", "E", "Z", "Y"];
+    var number = bytes;
+
+    while (number > base && notations.length > 1) {
+      number /= base;
+      notations.shift();
+    }
+
+    return (notations[0] ? number.toFixed(1) : number) + " " + notations[0] + "B";
+  },
+
   log: function () {
     if (this.DEBUG)
       Application.console.log(Util.format.apply(Util, arguments));

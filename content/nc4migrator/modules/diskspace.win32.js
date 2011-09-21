@@ -36,7 +36,10 @@ function getDiskSpace(aDirectory) {
   var total     = new ULARGE_INTEGER(0);
   var totalFree = new ULARGE_INTEGER(0);
 
-  GetDiskFreeSpaceEx(directory.address(), availFree.address(), total.address(), totalFree.address());
+  var result = GetDiskFreeSpaceEx(directory.address(), availFree.address(), total.address(), totalFree.address());
+  if (!result)
+    return -1;
+
   var returnValue = availFree.value;
 
   kernel32.close();

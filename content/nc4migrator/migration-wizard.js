@@ -10,6 +10,7 @@
   const { MigrationManager } = Cu.import('chrome://nc4migrator/content/modules/MigrationManager.js', {});
   const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
   const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
+  const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);
@@ -23,7 +24,9 @@
     get confirmPage() $("confirm-page"),
     get migrationProfile() $("migration-profile"),
     get migrationAccount() $("migration-account"),
-    get migrationQuota() $("migration-quota"),
+    get migrationQuotaDeck() $("migration-quota"),
+    get migrationQuotaDetermined() $("migration-quota-determined"),
+    get migrationQuotaDeterminedOver() $("migration-quota-determined-over"),
     get migrationEstimatedMigrationTime() $("migration-estimated-migration-time"),
 
     get migratingProfile() $("migrating-profile"),
@@ -96,7 +99,11 @@
     },
 
     onConfirmationPageShow: function () {
-      this.setProfile(this.getSelectedProfile());
+      elements.wizard.canAdvance = false;
+      this.setProfile(this.getSelectedProfile())
+        .next(function() {
+          elements.wizard.canAdvance = true;
+        });
     },
 
     onMigratingPageShow: function () {
@@ -183,8 +190,13 @@
     },
 
     setProfile: function (ncProfile) {
-      if (!ncProfile)
-        return;
+      if (!ncProfile) {
+        let deferred = new Deferred();
+        Deferred.next(function() {
+          deferred.call();
+        });
+        return deferred;
+      }
 
       let migrator
             = this.currentMigrator
@@ -193,8 +205,18 @@
       elements.migrationProfile.value = ncProfile.name;
       elements.migrationAccount.value = ncProfile.mailAddress;
 
-      let quota = migrator.getLocalMailFolderQuota();
-      elements.migrationQuota.value = Util.formatBytes(quota);
+      let timeout = 1000 * 60;
+      return migrator.getLocalMailFolderQuota(timeout)
+              .next(function(aResult) {
+                let deck = elements.migrationQuotaDeck;
+                if (aResult.complete) {
+                  elements.migrationQuotaDetermined.value = Util.formatBytes(aResult.size);
+                  deck.selectedItem = elements.migrationQuotaDetermined;
+                } else {
+                  elements.migrationQuotaDeterminedOver.value = Util.formatBytes(aResult.size);
+                  deck.selectedItem = elements.migrationQuotaDeterminedOver.parentNode;
+                }
+              });
     },
 
     currentMigrator: null

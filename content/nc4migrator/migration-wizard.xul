@@ -47,9 +47,17 @@
             <description id="migration-account" />
           </row>
           <!-- Do not show -->
-          <row>
+          <row id="migration-quota-determined">
             <description>&wizard.quota;</description>
-            <description id="migration-quota" />
+            <deck id="migration-quota">
+              <description id="migration-quota-undefermined" value="&wizard.quota.undetermined;" />
+              <description id="migration-quota-determined" />
+              <hbox>                
+                <description value="&wizard.quota.over_prefix;" />
+                <description id="migration-quota-determined-over" />
+                <description value="&wizard.quota.over_suffix;" />
+              </hbox>
+            </deck>
           </row>
           <row>
             <description>&wizard.estimatedMigrationTime;</description>

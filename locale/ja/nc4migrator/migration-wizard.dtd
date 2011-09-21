@@ -5,6 +5,9 @@
 <!ENTITY wizard.profile "移行プロファイル">
 <!ENTITY wizard.account "メールアカウント">
 <!ENTITY wizard.quota "メール容量">
+<!ENTITY wizard.quota.undetermined "計算中...">
+<!ENTITY wizard.quota.over_prefix "">
+<!ENTITY wizard.quota.over_suffix "以上">
 <!ENTITY wizard.estimatedMigrationTime "移行処理時間">
 
 <!-- Profile List -->

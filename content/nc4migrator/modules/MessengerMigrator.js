@@ -44,6 +44,7 @@ const { Util } = Cu.import("chrome://nc4migrator/content/modules/Util.js", {});
 const { Preferences } = Cu.import("chrome://nc4migrator/content/modules/Preferences.js", {});
 const { Services } = Cu.import("chrome://nc4migrator/content/modules/Services.js", {});
 const { StringBundle } = Cu.import("chrome://nc4migrator/content/modules/StringBundle.js", {});
+const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
 
 const Prefs = new Preferences("");
 
@@ -552,18 +553,19 @@ MessengerMigrator.prototype = {
     return null;
   },
 
-  getLocalMailFolderQuota: function () {
-    let bytes = 0;
+  getLocalMailFolderQuota: function (aTimeout) {
+    let totalSize = 0;
     let mailDir = this.n4MailDirectory;
-
-    if (mailDir) {
-      Util.traverseDirectory(mailDir, function (file) {
-        if (!file.isDirectory())
-          bytes += file.fileSize;
-      });
-    }
-
-    return bytes;
+    return Util.deferredTraverseDirectory(mailDir, function(aFile) {
+             if (!file.isDirectory())
+               totalSize += file.fileSize;
+           }, aTimeout)
+             .next(function(aComplete) {
+               return {
+                 size     : totalSize,
+                 complete : aComplete;
+               }
+             });
   },
 
   getLocalFolderServer: function () {

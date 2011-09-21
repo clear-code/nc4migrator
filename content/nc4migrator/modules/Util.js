@@ -5,6 +5,8 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
+const { Deferred } = Cu.import('chrome://nc4migrator/content/modules/jsdeferred.js', {});
+
 const Application = Cc['@mozilla.org/steel/application;1']
   .getService(Ci.steelIApplication);
 
@@ -167,6 +169,55 @@ var Util = {
         Util.traverseDirectory(nextDir, visitor);
       }
     }
+  },
+
+  deferredTraverseDirectory: function (directory, visitor, timeout) {
+    if (!directory)
+      return Deferred.next(function() {
+               return true;
+             });
+
+    return Deferred.next(function() {
+             try {
+               visitor(directory);
+             } catch (x) {
+               Util.log("deferredTraverseDirectory: " + x);
+             }
+
+             try{
+               if (!directory.isDirectory())
+                 return true;
+
+               var deferreds = [];
+               var entries = directory.directoryEntries;
+             } catch (x) {
+               Util.log("deferredTraverseDirectory: " + x);
+               return true;
+             }
+
+             while (entries.hasMoreElements()) {
+               let nextDir = entries.getNext().QueryInterface(Ci.nsIFile);
+               deferreds.push(Util.deferredTraverseDirectory(nextDir, visitor));
+             }
+             if (!deferreds.length)
+               return true;
+
+             var deferred = new Deferred();
+             var timer;
+             var traversing = Deferred.parallel(deferreds)
+                                .next(function() {
+                                  if (timer) timer.cancel();
+                                  deferred.call(true);
+                                }).error(function(e){ alert(e);});
+             if (timeout) {
+               timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+               timer.initWithCallback(function() {
+                 if (traversing) traversing.cancel();
+                 deferred.call(false);
+               }, timeout, timer.TYPE_ONE_SHOT);
+             }
+             return deferred;
+           });
   },
 
   // getQuota: function () {

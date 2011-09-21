@@ -13,7 +13,8 @@ const WCHAR           = new ctypes.ArrayType(ctypes.jschar);
 const LPCWSTR         = WCHAR.ptr;
 const LPCTSTR         = LPCWSTR;
 // http://msdn.microsoft.com/en-us/library/aa383742%28v=vs.85%29.aspx
-const ULARGE_INTEGER  = ctypes.uint64_t;
+const ULONGLONG       = ctypes.uint64_t;
+const ULARGE_INTEGER  = ULONGLONG;
 const PULARGE_INTEGER = ULARGE_INTEGER.ptr;
 
 function getDiskSpace(aDirectory) {
@@ -21,19 +22,19 @@ function getDiskSpace(aDirectory) {
 
   // http://msdn.microsoft.com/ja-jp/library/cc429308.aspx
   const GetDiskFreeSpaceEx = kernel32.declare(
-          "GetDiskFreeSpaceEx",
+          "GetDiskFreeSpaceExW",
           ctypes.winapi_abi,
           BOOL,
-          LPCTSTR,         // directory name
-          PULARGE_INTEGER, // available free bytes
-          PULARGE_INTEGER, // total bytes
-          PULARGE_INTEGER  // total free bytes
+          ctypes.voidptr_t, // LPCTSTR // directory name
+          PULARGE_INTEGER,  // available free bytes
+          PULARGE_INTEGER,  // total bytes
+          PULARGE_INTEGER   // total free bytes
         );
 
   var directory = new WCHAR(aDirectory.path.split(""));
-  var availFree = new ULARGE_INTEGER();
-  var total     = new ULARGE_INTEGER();
-  var totalFree = new ULARGE_INTEGER();
+  var availFree = new ULARGE_INTEGER(0);
+  var total     = new ULARGE_INTEGER(0);
+  var totalFree = new ULARGE_INTEGER(0);
 
   GetDiskFreeSpaceEx(directory.address(), availFree.address(), total.address(), totalFree.address());
   var returnValue = availFree.value;

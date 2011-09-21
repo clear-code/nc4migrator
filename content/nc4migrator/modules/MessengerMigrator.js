@@ -484,7 +484,7 @@ MessengerMigrator.prototype = {
   get n4MailDirectory() {
     var oldMailDirPath = this.getN4Pref(this.PREF_MAIL_DIRECTORY, null);
     if (oldMailDirPath)
-      return oldMailDirPath;
+      return Util.getFile(oldMailDirPath);
 
     var profileDirectory = this.n4ProfileDirectory;
     Util.log("profile Directory => " + profileDirectory);

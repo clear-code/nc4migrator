@@ -112,13 +112,18 @@
       if (!this.currentMigrator)
         return Util.alert("Error", "Something wrong with this wizard", window);
 
-      this.currentMigrator.migrate(function onMigrated() {
-        wizard.canAdvance = true;
-        wizard.canRewind  = true;
-        wizard.advance(null); // proceed next page
-      }, function onError(x) {
-        Util.alert("Error", "Failed to migrate account: " + x, window);
-      });
+      this.currentMigrator
+        .migrate(function onProgress(progress) {
+          Util.log("progress: "+progress);
+        })
+        .next(function () {
+          wizard.canAdvance = true;
+          wizard.canRewind  = true;
+          wizard.advance(null); // proceed next page
+        })
+        .error(function (x) {
+          Util.alert("Error", "Failed to migrate account: " + x, window);
+        });
     },
 
     onFinishPageShow: function () {

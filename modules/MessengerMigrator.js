@@ -195,7 +195,7 @@ MessengerMigrator.prototype = {
   },
 
   // asynchronous
-  migrate: function (onMigrated, onError, progressReporter) {
+  migrate: function (progressReporter) {
     let progressReporterGiven = typeof progressReporter === "function";
 
     function reportProgress(progress) {
@@ -210,44 +210,68 @@ MessengerMigrator.prototype = {
 
     this.resetState();
 
-    try {
-      this.proceedWithMigration();
-    } catch (x) {
-      return onError(x);
+    let currentStep = 0;
+    let totalSteps = 0;
+    function progressStep() {
+      reportProgress(++currentStep / totalSteps);
     }
 
-    var identity = Services.accountManager.createIdentity();
-    this.migrateIdentity(identity);
+    let temporaryIdentity;
 
-    var smtpServer = Services.smtpService.createSmtpServer();
-    this.migrateSmtpServer(smtpServer);
+    let that = this;
+    return Deferred
+      .next((totalSteps++, function preProcess() {
+        progressStep();
+        that.proceedWithMigration();
+      }))
+      .next((totalSteps++, function migrateIdentity() {
+        progressStep();
+        temporaryIdentity = Services.accountManager.createIdentity();
+        that.migrateIdentity(temporaryIdentity);
+      }))
+      .next((totalSteps++, function migrateSmtpServer() {
+        progressStep();
+        var smtpServer = Services.smtpService.createSmtpServer();
+        that.migrateSmtpServer(smtpServer);
+      }))
+      .next((totalSteps++, function setDefaultSmtpServer(smtpServer) {
+        progressStep();
+        try {
+          Services.smtpService.defaultServer = smtpServer;
+        } catch (x) {}
+      }))
+      .next((totalSteps++, function migrateServer() {
+        progressStep();
 
-    try {
-      Services.smtpService.defaultServer = smtpServer;
-    } catch (x) {}
+        if (that.m_oldMailType !== that.IMAP_4X_MAIL_TYPE)
+          throw new Error("Trying to migrate a non-imap account");
 
-    if (this.m_oldMailType !== this.IMAP_4X_MAIL_TYPE)
-      return onError(new Error("Trying to migrate a non-imap account"));
+        that.ensureImapServersCleared();
 
+        var identities = that.migrateImapAccounts(temporaryIdentity);
 
-    this.ensureImapServersCleared();
+        try {
+          that.migrateLocalMailAccount();
+        } catch (x) {
+          throw new Error("Failed to migrate local mail account " + x);
+        }
 
-    var identities = this.migrateImapAccounts(identity);
-
-    try {
-      this.migrateLocalMailAccount();
-    } catch (x) {
-      return onError(new Error("Failed to migrate local mail account " + x));
-    }
-
-    identity.clearAllValues();
-
-    if (identities)
-      identities.forEach(this.makeSpecialFolderLocal, this);
-
-    reportProgress(1);          // finish
-
-    onMigrated();
+        return identities;
+      }))
+      .next((totalSteps++, function importSpecialFolders(identities) {
+        progressStep();
+        if (identities)
+          identities.forEach(that.makeSpecialFolderLocal, that);
+      }))
+      .next((totalSteps++, function postProcess() {
+        progressStep();
+        temporaryIdentity.clearAllValues();
+      }))
+      .error(function (x) {
+        if (temporaryIdentity)
+          temporaryIdentity.clearAllValues();
+        throw x;
+      });
   },
 
   // Entry Point

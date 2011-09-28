@@ -73,7 +73,7 @@
               next="finish-page"
               onpageshow="Wizard.onMigratingPageShow();">
     <description>&wizard.migrationProgress.description;</description>
-    <groupbox>
+    <groupbox orient="vertical">
       <grid flex="1">
         <columns>
           <column  />
@@ -90,6 +90,7 @@
           </row>
         </rows>
       </grid>
+      <progressmeter id="migration-progress-meter" type="determined" value="0"/>
     </groupbox>
   </wizardpage>
 

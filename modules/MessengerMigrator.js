@@ -194,7 +194,6 @@ MessengerMigrator.prototype = {
     }
   },
 
-  // asynchronous
   migrate: function (progressReporter) {
     let progressReporterGiven = typeof progressReporter === "function";
 

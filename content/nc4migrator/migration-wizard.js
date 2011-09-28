@@ -28,6 +28,7 @@
     get migrationQuotaDetermined() $("migration-quota-determined"),
     get migrationQuotaDeterminedOver() $("migration-quota-determined-over"),
     get migrationEstimatedMigrationTime() $("migration-estimated-migration-time"),
+    get migrationProgressMeter() $("migration-progress-meter"),
 
     get migratingProfile() $("migrating-profile"),
     get migratingAccount() $("migrating-account"),
@@ -114,7 +115,8 @@
 
       this.currentMigrator
         .migrate(function onProgress(progress) {
-          Util.log("progress: "+progress);
+          let percentage = Math.min(100, parseInt(progress * 100));
+          elements.migrationProgressMeter.value = percentage;
         })
         .next(function () {
           wizard.canAdvance = true;

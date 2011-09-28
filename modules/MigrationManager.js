@@ -96,10 +96,9 @@ var MigrationManager = {
 
     let targetDirectory = Util.getSpecialDirectory("ProfD");
     return Util.getDiskQuota(targetDirectory).next(function (diskSpaceInByte) {
-      var diskSpaceInGB = diskSpaceInByte / (1024 * 1024 * 1024);
-      var leastAvailableDiskspace = Prefs.get('extensions.nc4migrator.leastAvailableDiskspace');
-      if (diskSpaceInGB < leastAvailableDiskspace) {
-        let args = [Util.formatBytes(diskSpaceInByte), leastAvailableDiskspace + " GB"];
+      var requiredDiskspace = Prefs.get("extensions.nc4migrator.requiredDiskspace", 10 * 1024 * 1024 * 1024);
+      if (requiredDiskspace && diskSpaceInByte < requiredDiskspace) {
+        let args = [Util.formatBytes(diskSpaceInByte), Util.formatBytes(requiredDiskspace)];
         Util.alert(
           StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
           StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)

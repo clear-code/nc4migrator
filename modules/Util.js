@@ -384,8 +384,8 @@ var Util = {
       const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
       let tryCount = 0;
       return Deferred.next(function tryGetDiskSpace() {
-        let size = getDiskSpace(targetDirectory);
         tryCount++;
+        let size = getDiskSpace(targetDirectory);
         return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
       });
     } catch ([]) {}
@@ -395,36 +395,54 @@ var Util = {
 
   // legacy version for Gecko 1.9.2 or olders
   getDiskQuotaLegacy: function (targetDirectory) {
-    let deferred = new Deferred();
     let tmpFile = Util.getSpecialDirectory("TmpD");
     tmpFile.append(Util.generateUUID());
+    if (tmpFile.exists())
+      tmpFile.remove(true);
 
     let args = [targetDirectory.path, tmpFile.path];
     let process = Util.launchProcess(Util.diskFreeCommand, args);
 
-    let timer = Browser.setInterval(function () {
-      if (!tmpFile.exists())
-        return;
-      Browser.clearInterval(timer);
-      let resultString = Util.readFile(tmpFile, {
-        charset: "shift_jis"
-      });
-      let tryCount = 0;
-      Deferred.next(function tryRemoveTempFile() {
-        tryCount++;
-        try {
-          tmpFile.remove(true);
-        } catch([]) {
-          if (tryCount < 50)
-            Deferred.next(tryRemoveTempFile);
-        }
-      });
-      // next
-      let [, quotaString] = resultString.match(/:[ \t]*([0-9]+)/);
-      deferred.call(Number(quotaString));
-    }, 100);
+    return Deferred
+      .wait(0.1)
+      .next(function tryToGetResult() {
+        if (!tmpFile.exists())
+          return Deferred.wait(0.1).next(tryToGetResult);
+      })
+      .next(function () {
+        let tryCount = 0;
+        return Deferred.next(function tryToParseResult() {
+          tryCount++;
+          let resultString = Util.readFile(tmpFile, {
+            charset: "shift_jis"
+          });
+          let matchResult = resultString.match(/:[ \t]*([0-9]+)/);
+          if (!matchResult) {
+            if (tryCount < 50)
+              return Deferred.next(tryToParseResult);
+          }
+          let [, quotaString] = matchResult;
+          return Number(quotaString);
+        })
+      })
+      .next(function (quota) {
+        let tryCount = 0;
+        Deferred.next(function tryRemoveTempFile() {
+          tryCount++;
+          try {
+            tmpFile.remove(true);
+          } catch([]) {
+            if (tryCount < 50)
+              Deferred.next(tryRemoveTempFile);
+          }
+        });
 
-    return deferred;
+        return quota;
+      })
+      .error(function (error) {
+        Util.log(error);
+        return 0;
+      });
   },
 
   restartApplication: function () {

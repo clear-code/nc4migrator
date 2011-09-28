@@ -13,6 +13,7 @@
         id="nc4migrator-wizard"
         title="&wizard.title;"
         onload="Wizard.onLoad();"
+        onclose="return Wizard.onClose();"
         onwizardfinish="return Wizard.onFinish();"
         onwizardcancel="return Wizard.onCancel();"
         >

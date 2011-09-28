@@ -83,7 +83,11 @@
     },
 
     onCancel: function () {
-      return true;
+      return this.canCancel;
+    },
+
+    onClose: function () {
+      return this.canCancel;
     },
 
     profileListUpdated: false,
@@ -108,12 +112,19 @@
 
       let { wizard } = elements;
 
+      if (!this.currentMigrator) {
+        let error = StringBundle.nc4migrator.GetStringFromName("migrationError_noMigrator");
+        elements.migrationResultMessage.textContent = StringBundle.nc4migrator.formatStringFromName("migrationError", [error], 1);
+        wizard.advance(null); // proceed next page
+        return;
+      }
+
       wizard.canAdvance = false;
       wizard.canRewind  = false;
 
-      if (!this.currentMigrator)
-        return Util.alert("Error", "Something wrong with this wizard", window);
+      this.canCancel = false;
 
+      let that = this;
       this.currentMigrator
         .migrate(function onProgress(progress) {
           let percentage = Math.min(100, parseInt(progress * 100));
@@ -131,6 +142,8 @@
           wizard.canAdvance = true;
           wizard.canRewind  = true;
           wizard.advance(null); // proceed next page
+
+          that.canCancel = true;
         });
     },
 
@@ -249,7 +262,16 @@
       }
     },
 
-    currentMigrator: null
+    currentMigrator: null,
+
+
+    get canCancel() {
+      return !elements.wizard._cancelButton.disabled;
+    },
+    set canCancel(value) {
+      elements.wizard._cancelButton.disabled = !value;
+      return value;
+    }
   };
 
   exports.Wizard = Wizard;

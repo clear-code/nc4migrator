@@ -12,10 +12,11 @@ const { StringBundle } = Cu.import('resource://nc4migrator-modules/StringBundle.
 const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
 const Prefs = new Preferences("");
 
-function NcProfile(name, profileDirectory) {
+function NcProfile(name, profileDirectory, targetImapServers) {
   this.name = name;
   this.profileDirectory = profileDirectory;
   this.prefsObject = this.getPrefsObject();
+  this.targetImapServers = targetImapServers;
 }
 
 NcProfile.prototype = {
@@ -23,8 +24,16 @@ NcProfile.prototype = {
     return this.prefsObject["mail.identity.useremail"] || null;
   },
 
-  isImported: function () {
-    return false;
+  get migrated() {
+    // XXX: huge overhead
+    let that = this;
+    let migrator = new MessengerMigrator(this.prefsObject, {
+      profileDirectory: this.profileDirectory,
+      imapServersFilter: function (servers) {
+        return servers.filter(function (server) that.targetImapServers.indexOf(server) >= 0);
+      }
+    });
+    return migrator.alreadyMigrated;
   },
 
   getPrefsObject: function () {
@@ -67,10 +76,11 @@ var MigrationManager = {
   get username() Util.getEnv("username", Util.getEnv("USER")),
 
   get ncProfiles() {
+    var that = this;
     var profiles = Nsreg.getProfiles();
     return profiles.map(function (profile) {
       try {
-        return new NcProfile(profile.name, Util.getFile(profile.path));
+        return new NcProfile(profile.name, Util.getFile(profile.path), that.defaultImapServers);
       } catch (x) {
         Util.log("ncProfiles: " + x);
         return null;

@@ -149,14 +149,12 @@
         var name = ncProfile.name;
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
 
+        if (ncProfile.migrated)
+          prettyName += " (移行済み)";
+
         var item = elements.migrationProfileList.appendItem(
           prettyName, name
         );
-
-        // imported mark
-        if (ncProfile.isImported()) {
-          item.setAttribute("data-imported", "true");
-        }
       });
 
       elements.migrationProfileList.selectedIndex = 0;

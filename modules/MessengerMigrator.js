@@ -404,35 +404,60 @@ MessengerMigrator.prototype = {
     throw new Error("Implement this!");
   },
 
-  migrateImapAccounts: function (identity) {
+  getImapInfoFromServer: function (server) {
+    // get the old username
+    var imapUsernamePref = "mail.imap.server." + server + ".userName";
+    var username = this.getN4Pref(imapUsernamePref, "");
+
+    var imapIsSecurePref = "mail.imap.server." + server + ".isSecure";
+    var isSecure = this.getN4Pref(imapIsSecurePref, false);
+
+    // get the old host (and possibly port)
+    var [host, port] = server.split(":");
+    if (port)
+      port = parseInt(port, 10); // TODO: handle exception
+    else
+      port = Services.imapProtocolInfo.getDefaultServerPort(isSecure);
+
+    return {
+      username : username,
+      host     : host,
+      port     : port,
+      isSecure : isSecure
+    };
+  },
+
+  get migrationTargetImapServers() {
     let servers = this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, "").split(",");
 
     if (typeof this.imapServersFilter === "function")
       servers = this.imapServersFilter(servers);
 
-    Util.log("defaultImapServers => %s", servers);
+    return servers;
+  },
 
+  get alreadyMigrated() {
+    return this.migrationTargetImapServers.some(function (server) {
+      let { username, host, port, isSecure } = this.getImapInfoFromServer(server);
+      try {
+        if (Services.accountManager.FindServer(username, host, "imap"))
+          return true;
+      } catch (x) {
+        Util.log("Failed: alreadyMigrated: " + x);
+      }
+    }, this);
+  },
+
+  migrateImapAccounts: function (identity) {
     // returns created identities
-    return servers.map(function (server, idx) {
+    return this.migrationTargetImapServers.map(function (server, idx) {
       let isDefaultAccount = idx === 0;
       return this.migrateImapAccount(identity, server, isDefaultAccount);
     }, this);
   },
 
   migrateImapAccount: function (identity, hostAndPort, isDefaultAccount) {
-    // get the old username
-    var imapUsernamePref = "mail.imap.server." + hostAndPort + ".userName";
-    var username = this.getN4Pref(imapUsernamePref, "");
-
-    var imapIsSecurePref = "mail.imap.server." + hostAndPort + ".isSecure";
-    var isSecure = this.getN4Pref(imapIsSecurePref, false);
-
-    // get the old host (and possibly port)
-    var [host, port] = hostAndPort.split(":");
-    if (port)
-      port = parseInt(port, 10); // TODO: handle exception
-    else
-      port = Services.imapProtocolInfo.getDefaultServerPort(isSecure);
+    let { username, host, port, isSecure } = this.getImapInfoFromServer(hostAndPort);
 
     //
     // create the server
@@ -624,9 +649,15 @@ MessengerMigrator.prototype = {
     // "none" is the type we use for migrating 4.x "Local Mail"
     var localFoldersServer = this.getLocalFolderServer();
 
+    Util.log("Migrate local mail account");
+
     // now upgrade all the prefs
     // some of this ought to be moved out into the NONE implementation
-    localFoldersServer.QueryInterface(Ci.nsINoIncomingServer);
+    try {
+      localFoldersServer.QueryInterface(Ci.nsINoIncomingServer);
+    } catch (x) {
+      Util.log("migrateLocalMailAccount: Error: " + x);
+    }
 
     // if the "mail.directory" pref is set, use that.
     // if they used -installer, this pref will point to where their files got copied

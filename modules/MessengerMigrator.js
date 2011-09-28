@@ -216,6 +216,7 @@ MessengerMigrator.prototype = {
     }
 
     let temporaryIdentity;
+    let identities = [];
 
     let that = this;
     return Deferred
@@ -247,20 +248,18 @@ MessengerMigrator.prototype = {
 
         that.ensureImapServersCleared();
 
-        var identities = that.migrateImapAccounts(temporaryIdentity);
-
-        try {
-          that.migrateLocalMailAccount();
-        } catch (x) {
-          Util.log("Failed to migrate local mail account " + x);
-          throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
-        }
-
-        return identities;
+        identities = that.migrateImapAccounts(temporaryIdentity);
       }))
-      .next((totalSteps++, function importSpecialFolders(identities) {
+      .next((totalSteps++, function migrateLocalMailAccount() {
+        return that.migrateLocalMailAccount()
+                      .error(function() {
+                        Util.log("Failed to migrate local mail account " + x);
+                        throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
+                      });
+      }))
+      .next((totalSteps++, function importSpecialFolders() {
         progressStep();
-        if (identities)
+        if (identities && identities.length)
           identities.forEach(that.makeSpecialFolderLocal, that);
       }))
       .next((totalSteps++, function postProcess() {
@@ -325,7 +324,7 @@ MessengerMigrator.prototype = {
       // if they had IMAP in 4.x, they also had "Local Mail"
       // we'll migrate that to "Local Folders"
       try {
-        this.migrateLocalMailAccount(); // TODO: implement
+        this.migrateLocalMailAccount();
       } catch (x) {
         Util.log("Failed to migrate local mail account " + x + "  " + x.stack);
       }
@@ -713,14 +712,13 @@ MessengerMigrator.prototype = {
 
     // if the "mail.directory" pref is set, use that.
     // if they used -installer, this pref will point to where their files got copied
-
     var oldMailDir = this.n4MailDirectory;
-
     var mailDir = localFoldersServer.localPath;
 
     Util.log("Now, migrate %s => %s",
              oldMailDir && oldMailDir.path, mailDir && mailDir.path);
 
+    let deferred;
     if (oldMailDir) {
       // we need to set this to <profile>/Mail/Local Folders, because that's where
       // the 4.x "Local Mail" (when using imap) got copied.
@@ -732,13 +730,13 @@ MessengerMigrator.prototype = {
       localFolderFile = Util.getIdenticalFileFor(localFolderFile); // name, name-1, name-2, ...
       localFolderFile.create(0, 0644);
       name = localFolderFile.leafName; // name may be modified
-      LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd", onProgress);
+      deferred = LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd", onProgress);
     }
 
     // TODO: Implement this!
     // localFoldersServer.CopyDefaultMessages("Templates", mailDir);
 
-    return ;
+    return (deferred || Deferred).next(function() {});
   },
 
   setSendLaterUriPref: function (server) {

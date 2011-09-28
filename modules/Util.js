@@ -382,11 +382,19 @@ var Util = {
 
     try {
       const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
-      return Deferred.next(function () {
-        return getDiskSpace(targetDirectory);
+      let tryCount = 0;
+      return Deferred.next(function tryGetDiskSpace() {
+        let size = getDiskSpace(targetDirectory);
+        tryCount++;
+        return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
       });
     } catch ([]) {}
 
+    return this.getDiskQuotaLegacy(targetDirectory);
+  },
+
+  // legacy version for Gecko 1.9.2 or olders
+  getDiskQuotaLegacy: function (targetDirectory) {
     let deferred = new Deferred();
     let tmpFile = Util.getSpecialDirectory("TmpD");
     tmpFile.append(Util.generateUUID());

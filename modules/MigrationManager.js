@@ -97,11 +97,7 @@ var MigrationManager = {
     let targetDirectory = Util.getSpecialDirectory("ProfD");
     return Util.getDiskQuota(targetDirectory).next(function (diskSpaceInByte) {
       var diskSpaceInGB = diskSpaceInByte / (1024 * 1024 * 1024);
-
-      Util.alert("Diskspace In GB", diskSpaceInByte);
-
       var leastAvailableDiskspace = Prefs.get('extensions.nc4migrator.leastAvailableDiskspace');
-
       if (diskSpaceInGB < leastAvailableDiskspace) {
         let args = [Util.formatBytes(diskSpaceInByte), leastAvailableDiskspace + " GB"];
         Util.alert(

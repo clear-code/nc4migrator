@@ -677,8 +677,9 @@ MessengerMigrator.prototype = {
       let name = Services.accountManager.defaultAccount.incomingServer.username;
       let localFolderFile = mailDir.clone();
       localFolderFile.append(name);
-      if (!localFolderFile.exists())
-        localFolderFile.create(0, 0644);
+      localFolderFile = Util.getIdenticalFileFor(localFolderFile); // name, name-1, name-2, ...
+      localFolderFile.create(0, 0644);
+      name = localFolderFile.leafName; // name may be modified
       LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd", onProgress);
     }
 

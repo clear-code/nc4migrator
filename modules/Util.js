@@ -186,19 +186,17 @@ var Util = {
              }
 
              if (result === false)
-               return Deferred.next(function() {
-                 return false;
-               });
+               return false;
 
              try{
                if (!directory.isDirectory())
-                 return true;
+                 return result;
 
                var deferreds = [];
                var entries = directory.directoryEntries;
              } catch (x) {
                Util.log("deferredTraverseDirectory: " + x);
-               return true;
+               return result;
              }
 
              while (entries.hasMoreElements()) {
@@ -206,13 +204,14 @@ var Util = {
                deferreds.push(Util.deferredTraverseDirectory(nextDir, visitor));
              }
              if (!deferreds.length)
-               return true;
+               return result;
 
              var deferred = new Deferred();
              var timer;
              var traversing = Deferred.parallel(deferreds)
                                 .next(function(results) {
                                   if (timer) timer.cancel();
+                                  results.length = deferreds.length;
                                   deferred.call(Array.every(results, function(result) result ));
                                 });
              if (timeout) {

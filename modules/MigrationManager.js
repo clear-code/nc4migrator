@@ -82,10 +82,10 @@ var MigrationManager = {
   get defaultImapServers() (Prefs.get('extensions.nc4migrator.defaultImapServers') || "").split(","),
 
   beginMigration: function () {
-//    const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
+    const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
 
     let targetDirectory = Util.getSpecialDirectory("ProfD");
-    var diskSpaceInByte = 10;//getDiskSpace(targetDirectory);
+    var diskSpaceInByte = getDiskSpace(targetDirectory);
     var diskSpaceInGB = diskSpaceInByte / (1024 * 1024 * 1024);
 
     var leastAvailableDiskspace = Prefs.get('extensions.nc4migrator.leastAvailableDiskspace');
@@ -96,7 +96,6 @@ var MigrationManager = {
         StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
         StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)
       );
-      this.beginWizard();
     } else {
       this.beginWizard();
     }

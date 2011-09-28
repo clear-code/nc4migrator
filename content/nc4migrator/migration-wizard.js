@@ -53,7 +53,7 @@
 
       let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
             prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING  +
-            prompts.BUTTON_POS_2 * prompts.BUTTON_TITLE_CANCEL;
+            prompts.BUTTON_POS_2 * prompts.BUTTON_TITLE_IS_STRING;
 
       let button = prompts.confirmEx(
         null,
@@ -61,10 +61,10 @@
         <![CDATA[
 アカウント情報を反映するためには Thunderbird を再起動する必要があります。
 続けてアカウントをインポートするには [続けてアカウントをインポート]をクリックします。
-インポート処理を終了するためには[キャンセル]をクリックします。
+インポート処理を終了するためには[移行処理を終了]をクリックします。
 ]]>.toString(),
         flags,
-        "再起動", "続けてアカウントをインポート", "",
+        "再起動", "続けてアカウントをインポート", "移行処理を終了",
         null, {}
       );
 

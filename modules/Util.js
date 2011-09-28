@@ -377,14 +377,21 @@ var Util = {
     );
   },
 
-  getDiskQuota: function () {
+  getDiskQuota: function (targetDirectory) {
+    targetDirectory = Util.getFile(targetDirectory);
+
+    try {
+      const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
+      return Deferred.next(function () {
+        return getDiskSpace(targetDirectory);
+      });
+    } catch ([]) {}
+
     let deferred = new Deferred();
     let tmpFile = Util.getSpecialDirectory("TmpD");
     tmpFile.append(Util.generateUUID());
 
-    // Util.diskFreeCommand.path, "/MIN",
-
-    let args = ["C:", tmpFile.path];
+    let args = [targetDirectory.path, tmpFile.path];
     let process = Util.launchProcess(Util.diskFreeCommand, args);
 
     let timer = Browser.setInterval(function () {

@@ -179,21 +179,25 @@ var Util = {
              });
 
     return Deferred.next(function() {
+             var result;
              try {
-               visitor(directory);
+               result = visitor(directory);
              } catch (x) {
                Util.log("deferredTraverseDirectory: " + x);
              }
 
+             if (result === false)
+               return false;
+
              try{
                if (!directory.isDirectory())
-                 return true;
+                 return result;
 
                var deferreds = [];
                var entries = directory.directoryEntries;
              } catch (x) {
                Util.log("deferredTraverseDirectory: " + x);
-               return true;
+               return result;
              }
 
              while (entries.hasMoreElements()) {
@@ -201,15 +205,16 @@ var Util = {
                deferreds.push(Util.deferredTraverseDirectory(nextDir, visitor));
              }
              if (!deferreds.length)
-               return true;
+               return result;
 
              var deferred = new Deferred();
              var timer;
              var traversing = Deferred.parallel(deferreds)
-                                .next(function() {
+                                .next(function(results) {
                                   if (timer) timer.cancel();
-                                  deferred.call(true);
-                                }).error(function(e){ alert(e);});
+                                  results.length = deferreds.length;
+                                  deferred.call(Array.every(results, function(result) result ));
+                                });
              if (timeout) {
                timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
                timer.initWithCallback(function() {

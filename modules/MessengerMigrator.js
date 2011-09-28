@@ -603,13 +603,16 @@ MessengerMigrator.prototype = {
     return null;
   },
 
-  getLocalMailFolderQuota: function (aTimeout) {
+  getLocalMailFolderQuota: function () {
+    let timeout = Prefs.get("extensions.nc4migrator.quotaCalculation.timeout", 1000 * 60);
+    let maxSize = Prefs.get("extensions.nc4migrator.quotaCalculation.maxSize", 1000 * 1000 * 1000);
     let totalSize = 0;
     let mailDir = this.n4MailDirectory;
     return Util.deferredTraverseDirectory(mailDir, function(aFile) {
              if (!aFile.isDirectory())
                totalSize += aFile.fileSize;
-           }, aTimeout)
+             return maxSize <= 0 || totalSize < maxSize;
+           }, timeout)
              .next(function(aComplete) {
                return {
                  size     : totalSize,

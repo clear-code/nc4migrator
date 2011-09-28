@@ -151,7 +151,7 @@
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
 
         if (ncProfile.migrated)
-          prettyName += " (移行済み)";
+          prettyName = StringBundle.nc4migrator.formatStringFromID("migratedProfileName", [prettyName], 1);
 
         var item = elements.migrationProfileList.appendItem(
           prettyName, name

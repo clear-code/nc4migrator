@@ -5,6 +5,7 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
+const { Browser } = Cu.import('resource://nc4migrator-modules/Browser.js', {});
 const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
 const Application = Cc['@mozilla.org/steel/application;1']
@@ -325,6 +326,78 @@ var Util = {
     return self;
   },
 
+  generateUUID: function () {
+    return Cc["@mozilla.org/uuid-generator;1"]
+      .getService(Ci.nsIUUIDGenerator)
+      .generateUUID();
+  },
+
+  openFileFromURL: function (urlSpec) {
+    let ios = Cc['@mozilla.org/network/io-service;1']
+          .getService(Ci.nsIIOService);
+    var fileHandler = ios.getProtocolHandler('file')
+          .QueryInterface(Ci.nsIFileProtocolHandler);
+    return fileHandler.getFileFromURLSpec(urlSpec);
+  },
+
+  chromeToURLSpec: function (aUrl) {
+    if (!aUrl || !(/^chrome:/.test(aUrl)))
+      return null;
+
+    let ios = Cc['@mozilla.org/network/io-service;1']
+          .getService(Ci["nsIIOService"]);
+    let uri = ios.newURI(aUrl, "UTF-8", null);
+    let cr = Cc['@mozilla.org/chrome/chrome-registry;1']
+          .getService(Ci.nsIChromeRegistry);
+    let urlSpec = cr.convertChromeURL(uri).spec;
+
+    return urlSpec;
+  },
+
+  launchProcess: function (exe, args) {
+    let process = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+    let exe = Util.getFile(exe);
+    process.init(exe);
+    process.run(false, args, args.length);
+    return process;
+  },
+
+  commands: {
+    diskfree: "chrome://nc4migrator/content/bin/diskfree.bat"
+  },
+
+  get diskFreeCommand() {
+    return Util.openFileFromURL(
+      Util.chromeToURLSpec(Util.commands.diskfree)
+    );
+  },
+
+  getDiskQuota: function () {
+    let deferred = new Deferred();
+    let tmpFile = Util.getSpecialDirectory("TmpD");
+    tmpFile.append(Util.generateUUID());
+
+    // Util.diskFreeCommand.path, "/MIN",
+
+    let args = ["C:", tmpFile.path];
+    let process = Util.launchProcess(Util.diskFreeCommand, args);
+
+    let timer = Browser.setInterval(function () {
+      if (!tmpFile.exists())
+        return;
+      Browser.clearInterval(timer);
+      let resultString = Util.readFile(tmpFile, {
+        charset: "shift_jis"
+      });
+      tmpFile.remove(true);
+      // next
+      let [, quotaString] = resultString.match(/:[ \t]*([0-9]+)/);
+      deferred.call(Number(quotaString));
+    }, 100);
+
+    return deferred;
+  },
+
   restartApplication: function () {
     const nsIAppStartup = Ci.nsIAppStartup;
 
@@ -363,6 +436,11 @@ var Util = {
     let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
           .getService(Ci.nsIPromptService);
     prompts.alert(aWindow, aTitle, aMessage);
+  },
+
+  alert2: function () {
+    let message = Util.format.apply(Util, arguments);
+    Util.alert("Alert", message);
   },
 
   getElementCreator: function (doc) {

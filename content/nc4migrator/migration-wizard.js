@@ -200,8 +200,7 @@
       elements.migrationProfile.value = ncProfile.name;
       elements.migrationAccount.value = ncProfile.mailAddress;
 
-      let timeout = 1000 * 60;
-      return migrator.getLocalMailFolderQuota(timeout)
+      return migrator.getLocalMailFolderQuota()
               .next(function(aResult) {
                 let deck = elements.migrationQuotaDeck;
                 if (aResult.complete) {

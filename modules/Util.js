@@ -178,11 +178,17 @@ var Util = {
              });
 
     return Deferred.next(function() {
+             var result;
              try {
-               visitor(directory);
+               result = visitor(directory);
              } catch (x) {
                Util.log("deferredTraverseDirectory: " + x);
              }
+
+             if (result === false)
+               return Deferred.next(function() {
+                 return false;
+               });
 
              try{
                if (!directory.isDirectory())
@@ -205,10 +211,10 @@ var Util = {
              var deferred = new Deferred();
              var timer;
              var traversing = Deferred.parallel(deferreds)
-                                .next(function() {
+                                .next(function(results) {
                                   if (timer) timer.cancel();
-                                  deferred.call(true);
-                                }).error(function(e){ alert(e);});
+                                  deferred.call(Array.every(results, function(result) result ));
+                                });
              if (timeout) {
                timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
                timer.initWithCallback(function() {

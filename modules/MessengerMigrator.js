@@ -226,17 +226,18 @@ MessengerMigrator.prototype = {
       Services.smtpService.defaultServer = smtpServer;
     } catch (x) {}
 
-    if (this.m_oldMailType === this.IMAP_4X_MAIL_TYPE) {
-      var identities = this.migrateImapAccounts(identity);
-
-      try {
-        this.migrateLocalMailAccount();
-      } catch (x) {
-        return onError(new Error("Failed to migrate local mail account " + x));
-      }
-
-    } else {
+    if (this.m_oldMailType !== this.IMAP_4X_MAIL_TYPE)
       return onError(new Error("Trying to migrate a non-imap account"));
+
+
+    this.ensureImapServersCleared();
+
+    var identities = this.migrateImapAccounts(identity);
+
+    try {
+      this.migrateLocalMailAccount();
+    } catch (x) {
+      return onError(new Error("Failed to migrate local mail account " + x));
     }
 
     identity.clearAllValues();
@@ -442,9 +443,32 @@ MessengerMigrator.prototype = {
       try {
         if (Services.accountManager.FindServer(username, host, "imap"))
           return true;
-      } catch (x) {
-        Util.log("Failed: alreadyMigrated: " + x);
+      } catch ([]) {}
+      return false;
+    }, this);
+  },
+
+  clearImapServerAccount: function (username, host) {
+    var server;
+    try {
+      server = Services.accountManager.FindServer(username, host, "imap");
+      let targetAccounts = [];
+      for (let i = 0; i < Services.accountManager.accounts.Count(); ++i) {
+        let account = Services.accountManager.accounts.QueryElementAt(i, Ci.nsISupports);
+        account.QueryInterface(Ci.nsIMsgAccount);
+        if (account.incomingServer == server)
+          targetAccounts.push(account);
       }
+      targetAccounts.forEach(function (account) Services.accountManager.removeAccount(account));
+    } catch (x) {
+      Util.log("Failed to remove account %s: %s", username + host, x);
+    }
+  },
+
+  ensureImapServersCleared: function () {
+    this.migrationTargetImapServers.forEach(function (hostAndPort) {
+      let { username, host, port, isSecure } = this.getImapInfoFromServer(hostAndPort);
+      this.clearImapServerAccount(username, host);
     }, this);
   },
 
@@ -465,10 +489,11 @@ MessengerMigrator.prototype = {
     // http://mxr.mozilla.org/comm-central/source/mailnews/base/src/nsMsgAccountManager.cpp#1897
     try {
       var server = Services.accountManager.createIncomingServer(username, host, "imap");
-    } catch ([]) {
-      // Server already imported
-      return null;
+    } catch (x) {
+      // nothing to do
+      throw new Error("Failed to migrate imap account: " + x);
     }
+
     server.port = port;
     // server.isSecure = isSecure; isSecure is now readonly
     if (isSecure) {

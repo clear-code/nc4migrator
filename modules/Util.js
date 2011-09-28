@@ -409,7 +409,16 @@ var Util = {
       let resultString = Util.readFile(tmpFile, {
         charset: "shift_jis"
       });
-      tmpFile.remove(true);
+      let tryCount = 0;
+      Deferred.next(function tryRemoveTempFile() {
+        tryCount++;
+        try {
+          tmpFile.remove(true);
+        } catch([]) {
+          if (tryCount < 50)
+            Deferred.next(tryRemoveTempFile);
+        }
+      });
       // next
       let [, quotaString] = resultString.match(/:[ \t]*([0-9]+)/);
       deferred.call(Number(quotaString));

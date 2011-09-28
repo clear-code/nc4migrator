@@ -47,38 +47,32 @@
       let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
             .getService(Ci.nsIPromptService);
 
-      const BUTTON_RESTART  = 0;
-      const BUTTON_CONTINUE = 1;
-      const BUTTON_CANECL   = 2;
+      const BUTTON_CONTINUE = 0;
+      const BUTTON_EXIT     = 1;
 
       let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
-            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING  +
-            prompts.BUTTON_POS_2 * prompts.BUTTON_TITLE_IS_STRING;
+            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING;
 
       let button = prompts.confirmEx(
         null,
-        "アカウントの反映",
-        <![CDATA[
-アカウント情報を反映するためには Thunderbird を再起動する必要があります。
-続けてアカウントをインポートするには [続けてアカウントをインポート]をクリックします。
-インポート処理を終了するためには[移行処理を終了]をクリックします。
-]]>.toString(),
+        StringBundle.nc4migrator.GetStringFromName("nextMigration_title"),
+        StringBundle.nc4migrator.GetStringFromName("nextMigration_message"),
         flags,
-        "再起動", "続けてアカウントをインポート", "移行処理を終了",
+        StringBundle.nc4migrator.GetStringFromName("nextMigration_continue"),
+        StringBundle.nc4migrator.GetStringFromName("nextMigration_exit"),
+        null,
         null, {}
       );
 
       switch (button) {
-      case BUTTON_RESTART:
-        Util.restartApplication();
-        break;
       case BUTTON_CONTINUE:
         setTimeout(function () {
           MigrationManager.beginWizard();
         }, 100);
         elements.wizard.calcel();
         break;
-      case BUTTON_CANECL:
+      case BUTTON_EXIT:
+        this.confirmToRestart();
         elements.wizard.cancel();
         break;
       }
@@ -211,6 +205,36 @@
                   deck.selectedIndex = 2;
                 }
               });
+    },
+
+    confirmToRestart: function () {
+      let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
+            .getService(Ci.nsIPromptService);
+
+      const BUTTON_RESTART = 0;
+      const BUTTON_STAY    = 1;
+
+      let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
+            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING;
+
+      let button = prompts.confirmEx(
+        null,
+        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_title"),
+        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_message"),
+        flags,
+        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_restart"),
+        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_stay"),
+        null,
+        null, {}
+      );
+
+      switch (button) {
+      case BUTTON_RESTART:
+        Util.restartApplication();
+        break;
+      case BUTTON_STAY:
+        break;
+      }
     },
 
     currentMigrator: null

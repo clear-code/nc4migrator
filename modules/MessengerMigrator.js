@@ -243,7 +243,7 @@ MessengerMigrator.prototype = {
         progressStep();
 
         if (that.m_oldMailType !== that.IMAP_4X_MAIL_TYPE)
-          throw new Error("Trying to migrate a non-imap account");
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_nonImapAccount");
 
         that.ensureImapServersCleared();
 
@@ -252,7 +252,8 @@ MessengerMigrator.prototype = {
         try {
           that.migrateLocalMailAccount();
         } catch (x) {
-          throw new Error("Failed to migrate local mail account " + x);
+          Util.log("Failed to migrate local mail account " + x);
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
         }
 
         return identities;

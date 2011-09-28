@@ -28,12 +28,13 @@
     get migrationQuotaDetermined() $("migration-quota-determined"),
     get migrationQuotaDeterminedOver() $("migration-quota-determined-over"),
     get migrationEstimatedMigrationTime() $("migration-estimated-migration-time"),
-    get migrationProgressMeter() $("migration-progress-meter"),
+
 
     get migratingProfile() $("migrating-profile"),
     get migratingAccount() $("migrating-account"),
+    get migrationProgressMeter() $("migration-progress-meter"),
 
-    get migratedProfile() $("migrated-profile")
+    get migrationResultMessage() $("migration-result-message")
   };
 
   var Wizard = {
@@ -119,18 +120,22 @@
           elements.migrationProgressMeter.value = percentage;
         })
         .next(function () {
+          return StringBundle.nc4migrator.formatStringFromName("migrationSuccess", [elements.migrationProfile.value], 1);
+        })
+        .error(function (x) {
+          return StringBundle.nc4migrator.formatStringFromName("migrationError", [x], 1);
+        })
+        .next(function (message) {
+          elements.migrationResultMessage.textContent = message;
+
           wizard.canAdvance = true;
           wizard.canRewind  = true;
           wizard.advance(null); // proceed next page
-        })
-        .error(function (x) {
-          Util.alert("Error", "Failed to migrate account: " + x, window);
         });
     },
 
     onFinishPageShow: function () {
       elements.wizard.canRewind  = false; // never back
-      elements.migratedProfile.value = elements.migrationProfile.value;
     },
 
     // ------------------------------------------------------------
@@ -151,7 +156,7 @@
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
 
         if (ncProfile.migrated)
-          prettyName = StringBundle.nc4migrator.formatStringFromID("migratedProfileName", [prettyName], 1);
+          prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
 
         var item = elements.migrationProfileList.appendItem(
           prettyName, name

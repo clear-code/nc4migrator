@@ -97,10 +97,8 @@
   <wizardpage pageid="finish-page"
               id="finish-page"
               onpageshow="Wizard.onFinishPageShow();">
-    <hbox align="center">
-      <description>&wizard.migrationFinished.descriptionHead;</description>
-      <description id="migrated-profile" />
-      <description>&wizard.migrationFinished.descriptionTail;</description>
+    <hbox align="start" flex="1">
+      <description id="migration-result-message" flex="1" style="white-space:pre-wrap"/>
     </hbox>
   </wizardpage>
 

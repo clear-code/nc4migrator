@@ -24,10 +24,12 @@
     get confirmPage() $("confirm-page"),
     get migrationProfile() $("migration-profile"),
     get migrationAccount() $("migration-account"),
-    get migrationQuotaDeck() $("migration-quota"),
-    get migrationQuotaDetermined() $("migration-quota-determined"),
-    get migrationQuotaDeterminedOver() $("migration-quota-determined-over"),
-    get migrationEstimatedMigrationTime() $("migration-estimated-migration-time"),
+    get migrationQuota() $("migration-quota"),
+    get migrationQuotaRow() $("migration-quota-row"),
+    get migrationEstimatedTime() $("migration-estimated-time"),
+    get migrationEstimatedTimeRow() $("migration-estimated-time-row"),
+    get migrationQuotaAndEstimatedTimeUndetermined() $("migration-quota-and-estimated-time-undetermined"),
+    get migrationQuotaAndEstimatedTimeRow() $("migration-quota-and-estimated-time-row"),
 
 
     get migratingProfile() $("migrating-profile"),
@@ -46,24 +48,18 @@
     },
 
     onFinish: function () {
-      let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
-            .getService(Ci.nsIPromptService);
-
       const BUTTON_CONTINUE = 0;
       const BUTTON_EXIT     = 1;
-
-      let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
-            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING;
-
-      let button = prompts.confirmEx(
-        null,
+      let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
+                  Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
+      let button = Util.confirmEx(
+        window,
         StringBundle.nc4migrator.GetStringFromName("nextMigration_title"),
         StringBundle.nc4migrator.GetStringFromName("nextMigration_message"),
         flags,
         StringBundle.nc4migrator.GetStringFromName("nextMigration_continue"),
         StringBundle.nc4migrator.GetStringFromName("nextMigration_exit"),
-        null,
-        null, {}
+        null
       );
 
       switch (button) {
@@ -174,6 +170,7 @@
         var item = elements.migrationProfileList.appendItem(
           prettyName, name
         );
+        item.setAttribute("migrated", true);
       });
 
       elements.migrationProfileList.selectedIndex = 0;
@@ -195,15 +192,34 @@
     },
 
     ensureProfileSelected: function () {
-      let profileSelected =  !!elements.migrationProfileList.selectedItem;
+      let selectedItem = elements.migrationProfileList.selectedItem;
 
-      if (!profileSelected) {
+      if (!selectedItem) {
         Util.alert("Select a profile",
                    "Please select a profile",
                    window);
+        return false;
       }
 
-      return profileSelected;
+      if (selectedItem.getAttribute("migrated") == "true") {
+        let BUTTON_CONTINUE = 0;
+        let BUTTON_CANCEL   = 1;
+        let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
+                    Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
+        let button = Util.confirmEx(
+          window,
+          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_title"),
+          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_message"),
+          flags,
+          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_continue"),
+          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_cancel"),
+          null
+        );
+        if (button != BUTTON_CONTINUE)
+          return false;
+      }
+
+      return true;
     },
 
     setProfile: function (ncProfile) {
@@ -219,38 +235,43 @@
       elements.migrationProfile.value = ncProfile.name;
       elements.migrationAccount.value = ncProfile.mailAddress;
 
+      let seconds = Math.round((migrator.quotaCalculationTimeout || 1) / 1000);
+      elements.migrationQuotaAndEstimatedTimeUndetermined.value = StringBundle.nc4migrator.formatStringFromName("calculatingMigrationTime", [seconds], 1);
+
+      elements.migrationQuotaRow.hidden = true;
+      elements.migrationEstimatedTimeRow.hidden = true;
+      elements.migrationQuotaAndEstimatedTimeRow.hidden = false;
+
       return migrator.getLocalMailFolderQuota()
               .next(function(aResult) {
-                let deck = elements.migrationQuotaDeck;
+                var quota = Util.formatBytes(aResult.size);
+                var seconds = Math.round((aResult.size || 1) / 1024 / migrator.erapsedTimePer1MB);
                 if (aResult.complete) {
-                  elements.migrationQuotaDetermined.value = Util.formatBytes(aResult.size);
-                  deck.selectedIndex = 1;
+                  elements.migrationQuota.value = quota;
+                  elements.migrationEstimatedTime.value = seconds;
                 } else {
-                  elements.migrationQuotaDeterminedOver.value = Util.formatBytes(aResult.size);
-                  deck.selectedIndex = 2;
+                  elements.migrationQuota.value = StringBundle.nc4migrator.formatStringFromName("calculatedQuotaOver", [quota], 1);
+                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedErapsedTimeOver", [seconds], 1);
                 }
+                elements.migrationQuotaRow.hidden = false;
+                elements.migrationEstimatedTimeRow.hidden = false;
+                elements.migrationQuotaAndEstimatedTimeRow.hidden = true;
               });
     },
 
     confirmToRestart: function () {
-      let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
-            .getService(Ci.nsIPromptService);
-
       const BUTTON_RESTART = 0;
       const BUTTON_STAY    = 1;
-
-      let flags = prompts.BUTTON_POS_0 * prompts.BUTTON_TITLE_IS_STRING +
-            prompts.BUTTON_POS_1 * prompts.BUTTON_TITLE_IS_STRING;
-
-      let button = prompts.confirmEx(
-        null,
+      let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
+                  Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
+      let button = Util.confirmEx(
+        window,
         StringBundle.nc4migrator.GetStringFromName("restartConfirmation_title"),
         StringBundle.nc4migrator.GetStringFromName("restartConfirmation_message"),
         flags,
         StringBundle.nc4migrator.GetStringFromName("restartConfirmation_restart"),
         StringBundle.nc4migrator.GetStringFromName("restartConfirmation_stay"),
-        null,
-        null, {}
+        null
       );
 
       switch (button) {

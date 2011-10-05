@@ -564,6 +564,22 @@ var Util = {
     Util.alert("Alert", message);
   },
 
+  confirmEx: function (parent, title, message, flags, firstbutton, secondbutton, thirdbutton, checkboxlabel, checked) {
+    let prompts = Cc["@mozilla.org/embedcomp/prompt-service;1"]
+          .getService(Ci.nsIPromptService);
+    return prompts.confirmEx(
+      parent || null,
+      title,
+      message,
+      flags,
+      firstbutton || null,
+      secondbutton || null,
+      thirdbutton || null,
+      checkboxlabel || null,
+      checked || {}
+    );
+  },
+
   getElementCreator: function (doc) {
     return function elementCreator(name, attrs, children) {
       let elem = doc.createElement(name);

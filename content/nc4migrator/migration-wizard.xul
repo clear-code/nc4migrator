@@ -40,32 +40,27 @@
         </columns>
         <rows>
           <row>
-            <description>&wizard.profile;</description>
+            <description value="&wizard.profile;"/>
             <description id="migration-profile" />
           </row>
           <row>
-            <description>&wizard.account;</description>
+            <description value="&wizard.account;"/>
             <description id="migration-account" />
           </row>
-          <!-- Do not show -->
-          <row>
-            <description>&wizard.quota;</description>
-            <deck id="migration-quota">
-              <description id="migration-quota-undefermined" value="&wizard.quota.undetermined;" />
-              <description id="migration-quota-determined" />
-              <hbox>                
-                <description value="&wizard.quota.over_prefix;" />
-                <description id="migration-quota-determined-over" />
-                <description value="&wizard.quota.over_suffix;" />
-              </hbox>
-            </deck>
+          <row id="migration-quota-row" hidden="true">
+            <description value="&wizard.quota;"/>
+            <description id="migration-quota" />
           </row>
-          <row>
-            <description>&wizard.estimatedMigrationTime;</description>
-            <description id="migration-estimated-migration-time" />
+          <row id="migration-estimatedTime-row" hidden="true">
+            <description value="&wizard.estimatedTime;"/>
+            <description id="migration-estimated-time" />
           </row>
         </rows>
       </grid>
+      <hbox id="migration-quota-and-estimated-time-row">
+        <description value="&wizard.quotaAndEstimatedTime;"/>
+        <description id="migration-quota-and-estimated-time-undetermined" />
+      </hbox>
     </groupbox>
   </wizardpage>
 

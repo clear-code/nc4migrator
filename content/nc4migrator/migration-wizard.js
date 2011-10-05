@@ -250,7 +250,7 @@
       return migrator.getLocalMailFolderQuota()
               .next(function(aResult) {
                 var quota = Util.formatBytes(aResult.size);
-                var seconds = Math.round((aResult.size || 1) / 1024 * migrator.elapsedTimePer1MB);
+                var seconds = Math.round(migrator.elapsedTimePer1MB * (aResult.size || 1) / (1024 * 1024));
                 if (aResult.complete) {
                   elements.migrationQuota.value = quota;
                   elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedElapsedTime", [seconds], 1);

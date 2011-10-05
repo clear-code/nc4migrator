@@ -7,6 +7,7 @@ const Cr = Components.results;
 
 const { Browser } = Cu.import('resource://nc4migrator-modules/Browser.js', {});
 const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
+const { NetUtil } = Cu.import("resource://gre/modules/NetUtil.jsm", {});
 
 const Application = Cc['@mozilla.org/steel/application;1']
   .getService(Ci.steelIApplication);
@@ -97,6 +98,27 @@ var Util = {
     fileStream.close();
 
     return wrote;
+  },
+
+  copyFileAsync: function copyFileAsync(fromFile, toFile, callback) {
+    let ostream = Cc["@mozilla.org/network/file-output-stream;1"].
+      createInstance(Ci.nsIFileOutputStream);
+    ostream.init(toFile, -1, -1, 0);
+
+    let istream = Cc['@mozilla.org/network/file-input-stream;1']
+          .createInstance(Ci.nsIFileInputStream);
+    istream.init(fromFile, -1, -1, 0);
+
+    NetUtil.asyncCopy(istream, ostream, function (res) {
+      try {
+        ostream.close();
+      } catch ([]) {}
+      try {
+        istream.close();
+      } catch ([]) {}
+      if (typeof callback === "function")
+        callback(res);
+    });
   },
 
   readJSON: function (aTarget) {

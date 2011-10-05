@@ -257,6 +257,9 @@
                 elements.migrationQuotaRow.hidden = false;
                 elements.migrationEstimatedTimeRow.hidden = false;
                 elements.migrationQuotaAndEstimatedTimeRow.hidden = true;
+              })
+              .error(function(x) {
+                Util.alert(x);
               });
     },
 

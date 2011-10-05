@@ -12,7 +12,7 @@
 
 <!-- Profile List -->
 
-<!ENTITY wizard.profileList.description "移行するプロファイルを一つ選択してください。">
+<!ENTITY wizard.profileList.description "移行するNetscapeプロファイルを一つ選択してください。">
 
 <!-- Migration Confirmation -->
 

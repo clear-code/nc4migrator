@@ -129,10 +129,18 @@ var Util = {
     return deferred;
   },
 
-  deferredCopyDirectory: function (fromDir, toDir, fileTransformer) {
+  deferredCopyDirectory: function (fromDir, toDir, fileTransformer, onProgress) {
     return Deferred.next(function () {
       var deferreds = [];
       var entries = fromDir.directoryEntries;
+
+      if (typeof onProgress === "function") {
+        try {
+          onProgress();
+        } catch (x) {
+          Util.log("deferredCopyDirectory: onProgress: " + x);
+        }
+      }
 
       if (typeof fileTransformer === "function") {
         try {

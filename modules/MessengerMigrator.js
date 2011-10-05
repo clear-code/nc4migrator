@@ -219,11 +219,18 @@ MessengerMigrator.prototype = {
     let identities = [];
 
     let that = this;
-    return Deferred
-      .next((totalSteps++, function preProcess() {
+
+    return Deferred.next(totalSteps++, function preProcess() {
+      return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
+        if (file.isDirectory())
+          return;
+        totalSteps++;
+      });
+    })
+      .next(function () {
         progressStep();
         that.proceedWithMigration();
-      }))
+      })
       .next((totalSteps++, function migrateIdentity() {
         progressStep();
         temporaryIdentity = Services.accountManager.createIdentity();
@@ -251,11 +258,12 @@ MessengerMigrator.prototype = {
         identities = that.migrateImapAccounts(temporaryIdentity);
       }))
       .next((totalSteps++, function migrateLocalMailAccount() {
-        return that.migrateLocalMailAccount()
-                      .error(function (x) {
-                        Util.log("Failed to migrate local mail account " + x);
-                        throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
-                      });
+        return that.migrateLocalMailAccount(function progressReporter() {
+          progressStep();
+        }).error(function (x) {
+          Util.log("Failed to migrate local mail account " + x);
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
+        });
       }))
       .next((totalSteps++, function importSpecialFolders() {
         progressStep();
@@ -931,7 +939,9 @@ var LocalFolderMigrator = {
     Util.log("destDir => " + destDir.path);
 
     var that = this;
-    return Util.deferredCopyDirectory(sourceDir, destDir, directoryNameTransformer).next(function () {
+    return Util.deferredCopyDirectory(
+      sourceDir, destDir, directoryNameTransformer, onProgress
+    ).next(function () {
       that.cleanDirectory(destDir);
     });
   },

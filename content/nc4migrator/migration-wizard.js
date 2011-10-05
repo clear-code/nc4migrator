@@ -165,13 +165,16 @@
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
         var originalPrettyName = prettyName;
 
-        if (ncProfile.migrated)
+         var migrated = ncProfile.migrated;
+         if (migrated)
           prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
 
         var item = elements.migrationProfileList.appendItem(
           prettyName, name
         );
         item.setAttribute("name", originalPrettyName);
+        if (migrated)
+          item.setAttribute("migrated", true);
       });
 
       elements.migrationProfileList.selectedIndex = 0;

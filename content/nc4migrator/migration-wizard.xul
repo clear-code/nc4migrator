@@ -51,7 +51,7 @@
             <description value="&wizard.quota;"/>
             <description id="migration-quota" />
           </row>
-          <row id="migration-estimatedTime-row" hidden="true">
+          <row id="migration-estimated-time-row" hidden="true">
             <description value="&wizard.estimatedTime;"/>
             <description id="migration-estimated-time" />
           </row>

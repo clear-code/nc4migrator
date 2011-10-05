@@ -5,4 +5,4 @@ pref("extensions.nc4migrator.defaultImapServers", "imap.googlemail.com,imap.goog
 // pref("extensions.nc4migrator.requiredDiskSpace", 10737418240);
 // pref("extensions.nc4migrator.quotaCalculation.maxSize", 1000000000);
 // pref("extensions.nc4migrator.quotaCalculation.timeout", 60000);
-// pref("extensions.nc4migrator.erapsedTimePer1MB", "0.309822017");
+// pref("extensions.nc4migrator.elapsedTimePer1MB", "0.309822017");

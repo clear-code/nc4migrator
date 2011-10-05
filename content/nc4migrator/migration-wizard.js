@@ -249,13 +249,13 @@
       return migrator.getLocalMailFolderQuota()
               .next(function(aResult) {
                 var quota = Util.formatBytes(aResult.size);
-                var seconds = Math.round((aResult.size || 1) / 1024 * migrator.erapsedTimePer1MB);
+                var seconds = Math.round((aResult.size || 1) / 1024 * migrator.elapsedTimePer1MB);
                 if (aResult.complete) {
                   elements.migrationQuota.value = quota;
-                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedErapsedTime", [seconds], 1);
+                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedElapsedTime", [seconds], 1);
                 } else {
                   elements.migrationQuota.value = StringBundle.nc4migrator.formatStringFromName("calculatedQuotaOver", [quota], 1);
-                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedErapsedTimeOver", [seconds], 1);
+                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedElapsedTimeOver", [seconds], 1);
                 }
                 elements.migrationQuotaRow.hidden = false;
                 elements.migrationEstimatedTimeRow.hidden = false;

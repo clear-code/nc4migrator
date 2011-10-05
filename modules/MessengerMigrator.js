@@ -913,9 +913,13 @@ var LocalFolderMigrator = {
     Util.log("sourceDir => " + sourceDir.path);
     Util.log("destDir => " + destDir.path);
 
-    sourceDir.copyTo(destDir, newName);
-    this.cleanDirectory(destFile);
-  }
+    var that = this;
+    return Util.deferredCopyDirectory(sourceDir, destFile).next(function () {
+      that.cleanDirectory(destFile);
+    });
+  },
+
+
 };
 
 var AddressBook = {

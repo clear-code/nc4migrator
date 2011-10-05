@@ -163,6 +163,7 @@
       this.ncProfiles.forEach(function (ncProfile, i) {
         var name = ncProfile.name;
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
+        var originalPrettyName = prettyName;
 
         if (ncProfile.migrated)
           prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
@@ -170,7 +171,7 @@
         var item = elements.migrationProfileList.appendItem(
           prettyName, name
         );
-        item.setAttribute("migrated", true);
+        item.setAttribute("name", originalPrettyName);
       });
 
       elements.migrationProfileList.selectedIndex = 0;
@@ -209,7 +210,7 @@
         let button = Util.confirmEx(
           window,
           StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_title"),
-          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_message"),
+          StringBundle.nc4migrator.formatStringFromName("reimportConfirmation_message", [selectedItem.getAttribute("name")], 1),
           flags,
           StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_continue"),
           StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_cancel"),

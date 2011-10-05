@@ -129,10 +129,20 @@ var Util = {
     return deferred;
   },
 
-  deferredCopyDirectory: function (fromDir, toDir) {
+  deferredCopyDirectory: function (fromDir, toDir, fileTransformer) {
     return Deferred.next(function () {
       var deferreds = [];
       var entries = fromDir.directoryEntries;
+
+      if (typeof fileTransformer === "function") {
+        try {
+          let transformed = fileTransformer(toDir, fromDir);
+          if (transformed)
+            toDir = transformed;
+        } catch (x) {
+          Util.log("deferredCopyDirectory: " + x);
+        }
+      }
 
       if (!toDir.exists())
         toDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0775); // XXX: permission
@@ -141,7 +151,7 @@ var Util = {
         let nextFromFile = entries.getNext().QueryInterface(Ci.nsIFile);
         let nextToFile   = let (cloned = toDir.clone()) (cloned.append(nextFromFile.leafName), cloned);
         if (nextFromFile.isDirectory())
-          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile));
+          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile, fileTransformer));
         else
           deferreds.push(Util.deferredCopyFile(nextFromFile, nextToFile));
       }

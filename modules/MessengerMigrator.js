@@ -725,12 +725,32 @@ MessengerMigrator.prototype = {
       // it would be great to use the server key, but we don't know it
       // when we are copying of the mail.
       let name = Services.accountManager.defaultAccount.incomingServer.username;
-      let localFolderFile = mailDir.clone();
-      localFolderFile.append(name);
-      localFolderFile = Util.getIdenticalFileFor(localFolderFile); // name, name-1, name-2, ...
-      localFolderFile.create(0, 0644);
-      name = localFolderFile.leafName; // name may be modified
-      deferred = LocalFolderMigrator.migrateTo(oldMailDir, mailDir, name + ".sbd", onProgress);
+
+      let accountLocalFolder = mailDir.clone(); // Local Mail Folders
+      accountLocalFolder.append(name);
+      accountLocalFolder = Util.getIdenticalFileFor(accountLocalFolder); // name, name-1, name-2, ...
+
+      deferred = LocalFolderMigrator.migrateTo(
+        oldMailDir,             // Mail
+        accountLocalFolder,
+        function sbdCreator(file, fromFile) {
+          if (!fromFile.isDirectory())
+            return file;
+
+          if (file.exists())
+            file.remove(true);
+
+          // Dummy file
+          file.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
+
+          // When sub directories found, rename them
+          let subDir = file.parent.clone();
+          subDir.append(file.leafName + ".sbd");
+          Util.log("%s renamed to %s", file.path, subDir.path);
+          return subDir;
+        },
+        onProgress
+      );
     }
 
     // TODO: Implement this!
@@ -899,23 +919,16 @@ var LocalFolderMigrator = {
     });
   },
 
-  migrateTo: function (source, dest, newName, onProgress) {
+  migrateTo: function (source, dest, directoryNameTransformer, onProgress) {
     var sourceDir = Util.getFile(source);
     var destDir   = Util.getFile(dest);
-
-    var destFile = destDir.clone();
-    destFile.append(newName);
-    if (destFile.exists()) {
-      Util.log("%s exists. Remove it!", destFile.path);
-      destFile.remove(true);
-    }
 
     Util.log("sourceDir => " + sourceDir.path);
     Util.log("destDir => " + destDir.path);
 
     var that = this;
-    return Util.deferredCopyDirectory(sourceDir, destFile).next(function () {
-      that.cleanDirectory(destFile);
+    return Util.deferredCopyDirectory(sourceDir, destDir, directoryNameTransformer).next(function () {
+      that.cleanDirectory(destDir);
     });
   },
 

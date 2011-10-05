@@ -100,7 +100,7 @@ var Util = {
     return wrote;
   },
 
-  copyFileAsync: function copyFileAsync(fromFile, toFile, callback) {
+  copyFileAsync: function (fromFile, toFile, callback) {
     let ostream = Cc["@mozilla.org/network/file-output-stream;1"].
       createInstance(Ci.nsIFileOutputStream);
     ostream.init(toFile, -1, -1, 0);
@@ -109,7 +109,7 @@ var Util = {
           .createInstance(Ci.nsIFileInputStream);
     istream.init(fromFile, -1, -1, 0);
 
-    NetUtil.asyncCopy(istream, ostream, function (res) {
+    NetUtil.asyncCopy(istream, ostream, function (resCode) {
       try {
         ostream.close();
       } catch ([]) {}
@@ -117,7 +117,49 @@ var Util = {
         istream.close();
       } catch ([]) {}
       if (typeof callback === "function")
-        callback(res);
+        callback(Components.isSuccessCode(resCode));
+    });
+  },
+
+  deferredCopyFile: function (fromFile, toFile) {
+    var deferred = new Deferred();
+    Util.copyFileAsync(fromFile, toFile, function (succeeded) {
+      deferred.call(succeeded);
+    });
+    return deferred;
+  },
+
+  deferredCopyDirectory: function (fromDir, toDir) {
+    return Deferred.next(function () {
+      var deferreds = [];
+      var entries = fromDir.directoryEntries;
+
+      if (!toDir.exists())
+        toDir.create(Ci.nsIFile.DIRECTORY_TYPE, 0775); // XXX: permission
+
+      while (entries.hasMoreElements()) {
+        let nextFromFile = entries.getNext().QueryInterface(Ci.nsIFile);
+        let nextToFile   = let (cloned = toDir.clone()) (cloned.append(nextFromFile.leafName), cloned);
+        if (nextFromFile.isDirectory())
+          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile));
+        else
+          deferreds.push(Util.deferredCopyFile(nextFromFile, nextToFile));
+      }
+
+      if (!deferreds.length)
+        return true;
+
+      var deferred = new Deferred();
+      // Call Util.deferredCopyDirectory() and Util.deferredCopyFile() asynchronously
+      Deferred.parallel(deferreds).next(function (results) {
+        // Because results and deferreds have different global object,
+        // jsdeferred doesn't set "length" property of results.
+        // We have to set results.length explicitly.
+        results.length = deferreds.length;
+        deferred.call(Array.every(results, function (result) result));
+      });
+
+      return deferred;
     });
   },
 

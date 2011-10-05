@@ -87,6 +87,10 @@
         </rows>
       </grid>
       <progressmeter id="migration-progress-meter" type="determined" value="0"/>
+      <!-- See https://bugzilla.mozilla.org/show_bug.cgi?id=266459 -->
+      <progressmeter id="migration-progress-undetermined-meter"
+                     type="undetermined"
+                     style="-moz-binding:url('chrome://global/content/bindings/progressmeter.xml#progressmeter-undetermined');" />
     </groupbox>
   </wizardpage>
 

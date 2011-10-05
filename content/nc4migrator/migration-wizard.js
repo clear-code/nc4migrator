@@ -35,6 +35,7 @@
     get migratingProfile() $("migrating-profile"),
     get migratingAccount() $("migrating-account"),
     get migrationProgressMeter() $("migration-progress-meter"),
+    get migrationProgressUndeterminedMeter() $("migration-progress-undetermined-meter"),
 
     get migrationResultMessage() $("migration-result-message")
   };

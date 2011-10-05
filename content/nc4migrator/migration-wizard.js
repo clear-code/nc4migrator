@@ -165,8 +165,8 @@
         var prettyName = name + " <" + ncProfile.mailAddress + ">";
         var originalPrettyName = prettyName;
 
-         var migrated = ncProfile.migrated;
-         if (migrated)
+        var migrated = ncProfile.migrated;
+        if (migrated)
           prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
 
         var item = elements.migrationProfileList.appendItem(

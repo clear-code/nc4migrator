@@ -252,7 +252,7 @@ MessengerMigrator.prototype = {
       }))
       .next((totalSteps++, function migrateLocalMailAccount() {
         return that.migrateLocalMailAccount()
-                      .error(function() {
+                      .error(function (x) {
                         Util.log("Failed to migrate local mail account " + x);
                         throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
                       });

@@ -18,6 +18,8 @@ const kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
 Cu.import('resource://nc4migrator-modules/Util.js');
 Cu.import('resource://nc4migrator-modules/MessengerMigrator.js');
+Cu.import('resource://nc4migrator-modules/Services.js');
+Cu.import('resource://nc4migrator-modules/MigrationManager.js');
 
 function StartupService() {
 }
@@ -35,7 +37,28 @@ StartupService.prototype = {
         ObserverService.removeObserver(this, 'profile-after-change');
         this.listening = false;
       }
+
+      this.enterMigrationProcess();
     }
+  },
+
+  enterMigrationProcess: function () {
+    // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
+    const concreteAccountTypes = {
+      "pop3": true,
+      "imap": true,
+      "nntp": true
+    };
+
+    let concreteAccounts = Util.toArray(
+      Services.accountManager.accounts, Ci.nsIMsgAccount
+    ).filter(
+      function (account) account.incomingServer
+        && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
+    );
+
+    if (concreteAccounts.length === 0)
+      MigrationManager.beginMigration();
   },
 
   classID           : kCID,

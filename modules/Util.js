@@ -667,10 +667,21 @@ var Util = {
 
   toArray: function (enumerator, iface) {
     iface = iface || Ci.nsISupports;
-    let count = enumerator.Count();
-    let array = new Array(count);
-    for (let i = 0; i < count; ++i)
-      array[i] = enumerator.QueryElementAt(i, iface);
+    let array = [];
+
+    if (enumerator instanceof Ci.nsISupportsArray) {
+      let count = enumerator.Count();
+      for (let i = 0; i < count; ++i)
+        array.push(enumerator.QueryElementAt(i, iface));
+    } else if (enumerator instanceof Ci.nsISimpleEnumerator) {
+      while (enumerator.hasMoreElements())
+        array.push(enumerator.getNext());
+    }
+
     return array;
+  },
+
+  equal: function (a, b, propNames) {
+    return propNames.every(function (propName) a[propName] === b[propName]);
   }
 };

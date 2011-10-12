@@ -21,29 +21,33 @@ var Nc4Migrator = (function () {
     }
   };
 
-  if (!MigrationManager.mainWindowOpened) {
-    MigrationManager.mainWindowOpened = true;
+  window.addEventListener("load", function onLoad() {
+    window.removeEventListener("load", onLoad, false);
 
-    // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
-    const concreteAccountTypes = {
-      "pop3": true,
-      "imap": true,
-      "nntp": true
-    };
+    if (!MigrationManager.mainWindowOpened) {
+      MigrationManager.mainWindowOpened = true;
 
-    let concreteAccounts = Util.toArray(
-      Services.accountManager.accounts, Ci.nsIMsgAccount
-    ).filter(
-      function (account) account.incomingServer
-        && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
-    );
+      // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
+      const concreteAccountTypes = {
+        "pop3": true,
+        "imap": true,
+        "nntp": true
+      };
 
-    if (!concreteAccounts.length) {
-      exports.beginMigration().error(function (x) {
-        Util.log(x);
-      });
+      let concreteAccounts = Util.toArray(
+        Services.accountManager.accounts, Ci.nsIMsgAccount
+      ).filter(
+        function (account) account.incomingServer
+          && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
+      );
+
+      if (!concreteAccounts.length) {
+        exports.beginMigration().error(function (x) {
+          Util.log(x);
+        });
+      }
     }
-  }
+  }, false);
 
   return exports;
 })();

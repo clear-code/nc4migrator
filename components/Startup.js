@@ -23,8 +23,7 @@ function StartupService() {
 }
 
 StartupService.prototype = {
-  observe : function(aSubject, aTopic, aData)
-  {
+  observe: function (aSubject, aTopic, aData) {
     switch (aTopic)
     {
     case 'app-startup':

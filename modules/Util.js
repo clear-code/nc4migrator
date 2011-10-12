@@ -459,20 +459,31 @@ var Util = {
     );
   },
 
+  get getDiskSpace() {
+    if (!this._getDiskSpace) {
+      let { ctypes } = Cu.import("resource://gre/modules/ctypes.jsm", {});
+      this._getDiskSpace = !!ctypes.ArrayType
+        ? Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {}).getDiskSpace
+        : null;
+    }
+
+    return this._getDiskSpace;
+  },
+
   getDiskQuota: function (targetDirectory) {
     targetDirectory = Util.getFile(targetDirectory);
 
-    try {
-      const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
-      let tryCount = 0;
-      return Deferred.next(function tryGetDiskSpace() {
-        tryCount++;
-        let size = getDiskSpace(targetDirectory);
-        return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
-      });
-    } catch ([]) {}
+    let getDiskSpace = this.getDiskSpaceFunction;
 
-    return this.getDiskQuotaLegacy(targetDirectory);
+    if (!getDiskSpace)
+      return this.getDiskQuotaLegacy(targetDirectory);
+
+    let tryCount = 0;
+    return Deferred.next(function tryGetDiskSpace() {
+      tryCount++;
+      let size = getDiskSpace(targetDirectory);
+      return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
+    });
   },
 
   // legacy version for Gecko 1.9.2 or olders

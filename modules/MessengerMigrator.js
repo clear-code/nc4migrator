@@ -843,7 +843,7 @@ MessengerMigrator.prototype = {
       // if they were using imap, "network.hosts.imap_servers" must have been set
       // otherwise, they don't really have anything to migrate
       if (!this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, false))
-        throw new Error("PREF_4X_NETWORK_HOSTS_IMAP_SERVER");
+        throw StringBundle.nc4migrator.GetStringFromName("migrationError_noImapServersFound");
     } else {
       throw new Error("NS_ERROR_UNEXPECTED");
     }

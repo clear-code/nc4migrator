@@ -38,7 +38,7 @@ StartupService.prototype = {
         this.listening = false;
       }
 
-      this.enterMigrationProcess();
+      // this.enterMigrationProcess();
     }
   },
 

@@ -512,11 +512,11 @@ var Util = {
           let matchResult = resultString.match(/:[ \t]*([0-9]+)/);
           if (!matchResult) {
             if (tryCount < 50)
-              return Deferred.next(tryToParseResult);
+              return Deferred.wait(0.1).next(tryToParseResult);
           }
           let [, quotaString] = matchResult;
           return Number(quotaString);
-        })
+        });
       })
       .next(function (quota) {
         let tryCount = 0;
@@ -526,7 +526,7 @@ var Util = {
             tmpFile.remove(true);
           } catch([]) {
             if (tryCount < 50)
-              Deferred.next(tryRemoveTempFile);
+              Deferred.wait(0.1).next(tryRemoveTempFile);
           }
         });
 

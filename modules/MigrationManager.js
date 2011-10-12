@@ -98,7 +98,9 @@ var MigrationManager = {
     return Util.getDiskQuota(targetDirectory).next(function (diskSpaceInByte) {
       var requiredDiskSpace = Prefs.get("extensions.nc4migrator.requiredDiskSpace", 10 * 1024 * 1024 * 1024);
       if (requiredDiskSpace && diskSpaceInByte < requiredDiskSpace) {
-        let args = [Util.formatBytes(diskSpaceInByte), Util.formatBytes(requiredDiskSpace)];
+        // let args = [Util.formatBytes(requiredDiskSpace), Util.formatBytes(diskSpaceInByte)];
+        let args = [Util.formatBytes(requiredDiskSpace)];
+
         Util.alert(
           StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
           StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)
@@ -110,10 +112,12 @@ var MigrationManager = {
   },
 
   beginWizard: function () {
-    Util.getMainWindow().openDialog(
+    Util.openDialog(
       "chrome://nc4migrator/content/migration-wizard.xul",
       "nc4migrator:migrationWizard",
-      "chrome,titlebar,dialog,modal,resizable,centerscreen"
+      "chrome,titlebar,dialog,modal,resizable,centerscreen,dependent",
+      null,
+      Util.getMainWindow()
     );
   },
 

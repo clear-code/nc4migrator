@@ -459,20 +459,31 @@ var Util = {
     );
   },
 
+  get getDiskSpace() {
+    if (!this._getDiskSpace) {
+      let { ctypes } = Cu.import("resource://gre/modules/ctypes.jsm", {});
+      this._getDiskSpace = !!ctypes.ArrayType
+        ? Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {}).getDiskSpace
+        : null;
+    }
+
+    return this._getDiskSpace;
+  },
+
   getDiskQuota: function (targetDirectory) {
     targetDirectory = Util.getFile(targetDirectory);
 
-    try {
-      const { getDiskSpace } = Cu.import('resource://nc4migrator-modules/diskspace.win32.js', {});
-      let tryCount = 0;
-      return Deferred.next(function tryGetDiskSpace() {
-        tryCount++;
-        let size = getDiskSpace(targetDirectory);
-        return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
-      });
-    } catch ([]) {}
+    let getDiskSpace = this.getDiskSpace;
 
-    return this.getDiskQuotaLegacy(targetDirectory);
+    if (!getDiskSpace)
+      return this.getDiskQuotaLegacy(targetDirectory);
+
+    let tryCount = 0;
+    return Deferred.next(function tryGetDiskSpace() {
+      tryCount++;
+      let size = getDiskSpace(targetDirectory);
+      return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
+    });
   },
 
   // legacy version for Gecko 1.9.2 or olders
@@ -501,11 +512,11 @@ var Util = {
           let matchResult = resultString.match(/:[ \t]*([0-9]+)/);
           if (!matchResult) {
             if (tryCount < 50)
-              return Deferred.next(tryToParseResult);
+              return Deferred.wait(0.1).next(tryToParseResult);
           }
           let [, quotaString] = matchResult;
           return Number(quotaString);
-        })
+        });
       })
       .next(function (quota) {
         let tryCount = 0;
@@ -515,7 +526,7 @@ var Util = {
             tmpFile.remove(true);
           } catch([]) {
             if (tryCount < 50)
-              Deferred.next(tryRemoveTempFile);
+              Deferred.wait(0.1).next(tryRemoveTempFile);
           }
         });
 
@@ -555,6 +566,12 @@ var Util = {
     return Cc["@mozilla.org/appshell/window-mediator;1"]
       .getService(Ci.nsIWindowMediator)
       .getMostRecentWindow("mail:3pane");
+  },
+
+  openDialog: function (url, id, attr, args, owner) {
+    let windowWatcher = Cc['@mozilla.org/embedcomp/window-watcher;1']
+	  .getService(Ci.nsIWindowWatcher);
+    windowWatcher.openWindow(owner || null, url, id, attr, args || null);
   },
 
   // ============================================================
@@ -663,5 +680,25 @@ var Util = {
 
       return this.request("POST", url, callback, params, opts);
     }
+  },
+
+  toArray: function (enumerator, iface) {
+    iface = iface || Ci.nsISupports;
+    let array = [];
+
+    if (enumerator instanceof Ci.nsISupportsArray) {
+      let count = enumerator.Count();
+      for (let i = 0; i < count; ++i)
+        array.push(enumerator.QueryElementAt(i, iface));
+    } else if (enumerator instanceof Ci.nsISimpleEnumerator) {
+      while (enumerator.hasMoreElements())
+        array.push(enumerator.getNext());
+    }
+
+    return array;
+  },
+
+  equal: function (a, b, propNames) {
+    return propNames.every(function (propName) a[propName] === b[propName]);
   }
 };

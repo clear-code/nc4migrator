@@ -16,15 +16,13 @@ const kCID  = Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}');
 const kID   = '@clear-code.com/nc4migrator/startup;1';
 const kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
-Cu.import('resource://nc4migrator-modules/Util.js');
-Cu.import('resource://nc4migrator-modules/MessengerMigrator.js');
+let Util, MessengerMigrator, Services, MigrationManager;
 
 function StartupService() {
 }
 
 StartupService.prototype = {
-  observe : function(aSubject, aTopic, aData)
-  {
+  observe: function (aSubject, aTopic, aData) {
     switch (aTopic)
     {
     case 'app-startup':
@@ -36,7 +34,33 @@ StartupService.prototype = {
         ObserverService.removeObserver(this, 'profile-after-change');
         this.listening = false;
       }
+
+      ({ Util }) = Cu.import('resource://nc4migrator-modules/Util.js', {});
+      ({ MessengerMigrator }) = Cu.import('resource://nc4migrator-modules/MessengerMigrator.js', {});
+      ({ Services }) = Cu.import('resource://nc4migrator-modules/Services.js', {});
+      ({ MigrationManager }) = Cu.import('resource://nc4migrator-modules/MigrationManager.js', {});
+
+      // this.enterMigrationProcess();
     }
+  },
+
+  enterMigrationProcess: function () {
+    // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
+    const concreteAccountTypes = {
+      "pop3": true,
+      "imap": true,
+      "nntp": true
+    };
+
+    let concreteAccounts = Util.toArray(
+      Services.accountManager.accounts, Ci.nsIMsgAccount
+    ).filter(
+      function (account) account.incomingServer
+        && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
+    );
+
+    if (concreteAccounts.length === 0)
+      MigrationManager.beginMigration();
   },
 
   classID           : kCID,

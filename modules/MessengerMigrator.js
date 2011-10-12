@@ -220,13 +220,17 @@ MessengerMigrator.prototype = {
 
     let that = this;
 
-    return Deferred.next(totalSteps++, function preProcess() {
-      return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
-        if (file.isDirectory())
-          return;
-        totalSteps++;
-      });
-    })
+    return Deferred.next((totalSteps++, function checkImapServers() {
+      if (!that.migrationTargetImapServers.length)
+        throw StringBundle.nc4migrator.GetStringFromName("migrationError_noTargetedImapServersFound");
+    }))
+      .next((totalSteps++, function preProcess() {
+        return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
+          if (file.isDirectory())
+            return;
+          totalSteps++;
+        });
+      }))
       .next(function () {
         progressStep();
         that.proceedWithMigration();
@@ -238,8 +242,26 @@ MessengerMigrator.prototype = {
       }))
       .next((totalSteps++, function migrateSmtpServer() {
         progressStep();
-        var smtpServer = Services.smtpService.createSmtpServer();
-        that.migrateSmtpServer(smtpServer);
+
+        let username = that.getN4Pref(that.PREF_4X_MAIL_SMTP_NAME);
+        let hostname = that.getN4Pref(that.PREF_4X_NETWORK_HOSTS_SMTP_SERVER);
+        let smtpServer = null;
+
+        try {
+          smtpServer = Services.smtpService.findServer(username, hostname);
+        } catch (x) {
+          Util.log(x);
+        }
+
+        if (!smtpServer)
+          smtpServer = Services.smtpService.createSmtpServer();
+
+        if (smtpServer)
+          that.migrateSmtpServer(smtpServer);
+        else
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateSmtpAccount");
+
+        return smtpServer;
       }))
       .next((totalSteps++, function setDefaultSmtpServer(smtpServer) {
         progressStep();
@@ -281,7 +303,9 @@ MessengerMigrator.prototype = {
       });
   },
 
-  // Entry Point
+  /**
+   * @deprecated
+   */
   upgradePrefs: function () {
     // Reset some control vars, necessary in turbo mode.
     this.resetState();
@@ -600,7 +624,7 @@ MessengerMigrator.prototype = {
     this.setMailCopiesAndFolders(copiedIdentity, username, host);
 
     if (isDefaultAccount)
-      Services.accountManager.defaultAccount = account;
+      Services.accountManager.defaultAccount = this.defaultAccount = account;
 
     // Set check for new mail option for default account to TRUE
     server.loginAtStartUp = false; // XXX: DEBUG
@@ -736,7 +760,7 @@ MessengerMigrator.prototype = {
       // the 4.x "Local Mail" (when using imap) got copied.
       // it would be great to use the server key, but we don't know it
       // when we are copying of the mail.
-      let name = Services.accountManager.defaultAccount.incomingServer.username;
+      let name = this.defaultAccount.incomingServer.username;
 
       let accountLocalFolder = mailDir.clone(); // Local Mail Folders
       accountLocalFolder.append(name);
@@ -843,7 +867,7 @@ MessengerMigrator.prototype = {
       // if they were using imap, "network.hosts.imap_servers" must have been set
       // otherwise, they don't really have anything to migrate
       if (!this.getN4Pref(this.PREF_4X_NETWORK_HOSTS_IMAP_SERVER, false))
-        throw new Error("PREF_4X_NETWORK_HOSTS_IMAP_SERVER");
+        throw StringBundle.nc4migrator.GetStringFromName("migrationError_noImapServersFound");
     } else {
       throw new Error("NS_ERROR_UNEXPECTED");
     }

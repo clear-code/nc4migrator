@@ -16,10 +16,7 @@ const kCID  = Components.ID('{1db5ecc0-8615-11dd-ad8b-0800200c9a66}');
 const kID   = '@clear-code.com/nc4migrator/startup;1';
 const kNAME = 'Netscape Communicator 4 Migration Startup Service';
 
-Cu.import('resource://nc4migrator-modules/Util.js');
-Cu.import('resource://nc4migrator-modules/MessengerMigrator.js');
-Cu.import('resource://nc4migrator-modules/Services.js');
-Cu.import('resource://nc4migrator-modules/MigrationManager.js');
+let Util, MessengerMigrator, Services, MigrationManager;
 
 function StartupService() {
 }
@@ -37,6 +34,11 @@ StartupService.prototype = {
         ObserverService.removeObserver(this, 'profile-after-change');
         this.listening = false;
       }
+
+      ({ Util }) = Cu.import('resource://nc4migrator-modules/Util.js', {});
+      ({ MessengerMigrator }) = Cu.import('resource://nc4migrator-modules/MessengerMigrator.js', {});
+      ({ Services }) = Cu.import('resource://nc4migrator-modules/Services.js', {});
+      ({ MigrationManager }) = Cu.import('resource://nc4migrator-modules/MigrationManager.js', {});
 
       // this.enterMigrationProcess();
     }

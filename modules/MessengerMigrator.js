@@ -238,8 +238,26 @@ MessengerMigrator.prototype = {
       }))
       .next((totalSteps++, function migrateSmtpServer() {
         progressStep();
-        var smtpServer = Services.smtpService.createSmtpServer();
-        that.migrateSmtpServer(smtpServer);
+
+        let username = that.getN4Pref(that.PREF_4X_MAIL_SMTP_NAME);
+        let hostname = that.getN4Pref(that.PREF_4X_NETWORK_HOSTS_SMTP_SERVER);
+        let smtpServer = null;
+
+        try {
+          smtpServer = Services.smtpService.findServer(username, hostname);
+        } catch (x) {
+          Util.log(x);
+        }
+
+        if (!smtpServer)
+          smtpServer = Services.smtpService.createSmtpServer();
+
+        if (smtpServer)
+          that.migrateSmtpServer(smtpServer);
+        else
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateSmtpAccount");
+
+        return smtpServer;
       }))
       .next((totalSteps++, function setDefaultSmtpServer(smtpServer) {
         progressStep();

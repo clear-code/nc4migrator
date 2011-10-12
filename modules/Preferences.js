@@ -14,12 +14,13 @@
  * The Original Code is Preferences.
  *
  * The Initial Developer of the Original Code is Mozilla.
- * Portions created by the Initial Developer are Copyright (C) 2008
+ * Portions created by the Initial Developer are Copyright (C) 2008-2011
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
  *   Myk Melez <myk@mozilla.org>
  *   Daniel Aquino <mr.danielaquino@gmail.com>
+ *   SHIMODA Hiroshi <shimoda@clear-code.com>
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -107,6 +108,14 @@ Preferences.prototype = {
       }
     } catch (x) {
       return defaultValue;
+    }
+  },
+
+  getLocalized: function(prefName, defaultValue) {
+    try {
+      return this._prefSvc.getComplexValue(prefName, Ci.nsIPrefLocalizedString).data;
+    } catch (x) {
+      return this.get(prefName, defaultValue);
     }
   },
 

@@ -7,6 +7,9 @@ var Nc4Migrator = (function () {
   const { Util } = Cu.import('resource://nc4migrator-modules/Util.js', {});
   const { Services } = Cu.import('resource://nc4migrator-modules/Services.js', {});
 
+  const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
+  const Prefs = new Preferences("");
+
   exports.beginMigration = function () {
     return MigrationManager.beginMigration();
   };
@@ -40,6 +43,9 @@ var Nc4Migrator = (function () {
 
   window.addEventListener("DOMContentLoaded", function onLoad() {
     window.removeEventListener("DOMContentLoaded", onLoad, false);
+
+    document.getElementById("nc4migrator-migration-wizard")
+      .setAttribute("label", Prefs.getLocalized("extensions.nc4migrator.wizard.menu", ""));
 
     if (window.AutoConfigWizard) {
       let originalAutoConfigWizard = window.AutoConfigWizard;

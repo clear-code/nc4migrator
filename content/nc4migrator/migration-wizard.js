@@ -12,6 +12,9 @@
   const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
   const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
+  const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
+  const Messages = new Preferences("extensions.nc4migrator.wizard.");
+
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);
 
@@ -19,9 +22,12 @@
     get wizard() $("nc4migrator-wizard"),
 
     get profileListPage() $("profile-list-page"),
+    get profileListPageMessage() $("profile-list-page-message"),
     get migrationProfileList() $("migration-profile-list"),
 
     get confirmPage() $("confirm-page"),
+    get confirmPageMessage() $("confirm-page-message"),
+
     get migrationProfile() $("migration-profile"),
     get migrationAccount() $("migration-account"),
     get migrationQuota() $("migration-quota"),
@@ -31,7 +37,7 @@
     get migrationQuotaAndEstimatedTimeUndetermined() $("migration-quota-and-estimated-time-undetermined"),
     get migrationQuotaAndEstimatedTimeRow() $("migration-quota-and-estimated-time-row"),
 
-
+    get migratingPageMessage() $("migrating-page-message"),
     get migratingProfile() $("migrating-profile"),
     get migratingAccount() $("migrating-account"),
     get migrationProgressMeter() $("migration-progress-meter"),
@@ -46,6 +52,10 @@
     // ------------------------------------------------------------
 
     onLoad: function () {
+      elements.wizard.setAttribute("title", Messages.getLocalized("title", ""));
+      elements.profileListPageMessage.setAttribute("value", Messages.getLocalized("profileList", ""));
+      elements.confirmPageMessage.setAttribute("value", Messages.getLocalized("confirmation", ""));
+      elements.migratingPageMessage.setAttribute("value", Messages.getLocalized("migrating", ""));
     },
 
     onFinish: function () {
@@ -55,11 +65,11 @@
                   Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
       let button = Util.confirmEx(
         window,
-        StringBundle.nc4migrator.GetStringFromName("nextMigration_title"),
-        StringBundle.nc4migrator.GetStringFromName("nextMigration_message"),
+        Messages.getLocalized("next.title", ""),
+        Messages.getLocalized("next.message", ""),
         flags,
-        StringBundle.nc4migrator.GetStringFromName("nextMigration_continue"),
-        StringBundle.nc4migrator.GetStringFromName("nextMigration_exit"),
+        Messages.getLocalized("next.continue", ""),
+        Messages.getLocalized("next.exit", ""),
         null
       );
 
@@ -213,11 +223,13 @@
                     Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
         let button = Util.confirmEx(
           window,
-          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_title"),
-          StringBundle.nc4migrator.formatStringFromName("reimportConfirmation_message", [selectedItem.getAttribute("name")], 1),
+          Messages.getLocalized("reimport.title", ""),
+          Messages.getLocalized("reimport.message_before", "") +
+            selectedItem.getAttribute("name") +
+            Messages.getLocalized("reimport.message_after", ""),
           flags,
-          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_continue"),
-          StringBundle.nc4migrator.GetStringFromName("reimportConfirmation_cancel"),
+          Messages.getLocalized("reimport.continue", ""),
+          Messages.getLocalized("reimport.cancel", ""),
           null
         );
         if (button != BUTTON_CONTINUE)
@@ -274,11 +286,11 @@
                   Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
       let button = Util.confirmEx(
         window,
-        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_title"),
-        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_message"),
+        Messages.getLocalized("restart.title", ""),
+        Messages.getLocalized("restart.message", ""),
         flags,
-        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_restart"),
-        StringBundle.nc4migrator.GetStringFromName("restartConfirmation_stay"),
+        Messages.getLocalized("restart.restart", ""),
+        Messages.getLocalized("restart.stay", ""),
         null
       );
 

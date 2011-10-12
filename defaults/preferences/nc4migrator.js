@@ -1,3 +1,30 @@
+// localized prefs
+
+pref("extensions.nc4migrator.wizard.menu", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.title", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.availSpaceCheck.title", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.availSpaceCheck.message_before", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.availSpaceCheck.message_after", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.profileList", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.confirmation", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.migrating", "chrome://nc4migrator/locale/nc4migrator.properties");
+
+pref("extensions.nc4migrator.wizard.reimport.title", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.reimport.message_before", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.reimport.message_after", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.reimport.continue", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.reimport.cancel", "chrome://nc4migrator/locale/nc4migrator.properties");
+
+pref("extensions.nc4migrator.wizard.next.title", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.next.message", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.next.continue", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.next.exit", "chrome://nc4migrator/locale/nc4migrator.properties");
+
+pref("extensions.nc4migrator.wizard.restart.title", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.restart.message", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.restart.restart", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.restart.stay", "chrome://nc4migrator/locale/nc4migrator.properties");
+
 // pref("extensions.nc4migrator.addressbook.importAsHomeAddress", false);
 // pref("extensions.nc4migrator.shareOldMailbox", true);
 // pref("extensions.nc4migrator.override.*", *);

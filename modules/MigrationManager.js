@@ -11,6 +11,7 @@ const { MessengerMigrator } = Cu.import('resource://nc4migrator-modules/Messenge
 const { StringBundle } = Cu.import('resource://nc4migrator-modules/StringBundle.js', {});
 const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
 const Prefs = new Preferences("");
+const Messages = new Preferences("extensions.nc4migrator.wizard.");
 
 function NcProfile(name, profileDirectory, targetImapServers) {
   this.name = name;
@@ -98,12 +99,11 @@ var MigrationManager = {
     return Util.getDiskQuota(targetDirectory).next(function (diskSpaceInByte) {
       var requiredDiskSpace = Prefs.get("extensions.nc4migrator.requiredDiskSpace", 10 * 1024 * 1024 * 1024);
       if (requiredDiskSpace && diskSpaceInByte < requiredDiskSpace) {
-        // let args = [Util.formatBytes(requiredDiskSpace), Util.formatBytes(diskSpaceInByte)];
-        let args = [Util.formatBytes(requiredDiskSpace)];
-
         Util.alert(
-          StringBundle.nc4migrator.GetStringFromName("migrationAvailSpaceCheck"),
-          StringBundle.nc4migrator.formatStringFromName("migrationAvailSpaceExceeds", args, args.length)
+          Messages.getLocalized("availSpaceCheck.title", ""),
+          Messages.getLocalized("availSpaceCheck.message_before", "") +
+            Util.formatBytes(requiredDiskSpace) +
+            Messages.getLocalized("availSpaceCheck.message_after", "")
         );
       } else {
         that.beginWizard();

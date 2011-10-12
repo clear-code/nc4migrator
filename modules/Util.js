@@ -663,5 +663,14 @@ var Util = {
 
       return this.request("POST", url, callback, params, opts);
     }
+  },
+
+  toArray: function (enumerator, iface) {
+    iface = iface || Ci.nsISupports;
+    let count = enumerator.Count();
+    let array = new Array(count);
+    for (let i = 0; i < count; ++i)
+      array[i] = enumerator.QueryElementAt(i, iface);
+    return array;
   }
 };

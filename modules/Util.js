@@ -557,6 +557,12 @@ var Util = {
       .getMostRecentWindow("mail:3pane");
   },
 
+  openDialog: function (url, id, attr, args, owner) {
+    let windowWatcher = Cc['@mozilla.org/embedcomp/window-watcher;1']
+	  .getService(Ci.nsIWindowWatcher);
+    windowWatcher.openWindow(owner || null, url, id, attr, args || null);
+  },
+
   // ============================================================
   // DOM
   // ============================================================

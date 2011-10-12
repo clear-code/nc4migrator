@@ -220,13 +220,17 @@ MessengerMigrator.prototype = {
 
     let that = this;
 
-    return Deferred.next(totalSteps++, function preProcess() {
-      return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
-        if (file.isDirectory())
-          return;
-        totalSteps++;
-      });
-    })
+    return Deferred.next((totalSteps++, function checkImapServers() {
+      if (!that.migrationTargetImapServers.length)
+        throw StringBundle.nc4migrator.GetStringFromName("migrationError_noTargetedImapServersFound");
+    }))
+      .next((totalSteps++, function preProcess() {
+        return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
+          if (file.isDirectory())
+            return;
+          totalSteps++;
+        });
+      }))
       .next(function () {
         progressStep();
         that.proceedWithMigration();

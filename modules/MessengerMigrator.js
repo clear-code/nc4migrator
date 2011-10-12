@@ -624,7 +624,7 @@ MessengerMigrator.prototype = {
     this.setMailCopiesAndFolders(copiedIdentity, username, host);
 
     if (isDefaultAccount)
-      Services.accountManager.defaultAccount = account;
+      Services.accountManager.defaultAccount = this.defaultAccount = account;
 
     // Set check for new mail option for default account to TRUE
     server.loginAtStartUp = false; // XXX: DEBUG
@@ -760,7 +760,7 @@ MessengerMigrator.prototype = {
       // the 4.x "Local Mail" (when using imap) got copied.
       // it would be great to use the server key, but we don't know it
       // when we are copying of the mail.
-      let name = Services.accountManager.defaultAccount.incomingServer.username;
+      let name = this.defaultAccount.incomingServer.username;
 
       let accountLocalFolder = mailDir.clone(); // Local Mail Folders
       accountLocalFolder.append(name);

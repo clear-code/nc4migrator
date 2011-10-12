@@ -21,27 +21,45 @@ var Nc4Migrator = (function () {
     }
   };
 
-  window.addEventListener("load", function onLoad() {
-    window.removeEventListener("load", onLoad, false);
+  exports.getConcreteAccounts = function() {
+    // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
+    const concreteAccountTypes = {
+      "pop3": true,
+      "imap": true,
+      "nntp": true
+    };
+
+    let concreteAccounts = Util.toArray(
+      Services.accountManager.accounts, Ci.nsIMsgAccount
+    ).filter(
+      function (account) account.incomingServer
+        && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
+    );
+    return concreteAccounts;
+  };
+
+  window.addEventListener("DOMContentLoaded", function onLoad() {
+    window.removeEventListener("DOMContentLoaded", onLoad, false);
+
+    if (window.AutoConfigWizard) {
+      let originalAutoConfigWizard = window.AutoConfigWizard;
+      window.AutoConfigWizard = function(okCallback) {
+        exports.beginMigration().error(function (x) {
+          Util.log(x);
+        }).next(function() {
+          if (exports.getConcreteAccounts().length) {
+            okCallback();
+          } else {
+            originalAutoConfigWizard(okCallback);
+          }
+        });
+      };
+      return;
+    }
 
     if (!MigrationManager.mainWindowOpened) {
       MigrationManager.mainWindowOpened = true;
-
-      // http://mxr.mozilla.org/comm-central/source/mailnews/base/public/nsIMsgIncomingServer.idl#105
-      const concreteAccountTypes = {
-        "pop3": true,
-        "imap": true,
-        "nntp": true
-      };
-
-      let concreteAccounts = Util.toArray(
-        Services.accountManager.accounts, Ci.nsIMsgAccount
-      ).filter(
-        function (account) account.incomingServer
-          && concreteAccountTypes.hasOwnProperty(account.incomingServer.type)
-      );
-
-      if (!concreteAccounts.length) {
+      if (!exports.getConcreteAccounts().length) {
         exports.beginMigration().error(function (x) {
           Util.log(x);
         });

@@ -8,7 +8,7 @@ var Nc4Migrator = (function () {
   const { Services } = Cu.import('resource://nc4migrator-modules/Services.js', {});
 
   exports.beginMigration = function () {
-    MigrationManager.beginMigration();
+    return MigrationManager.beginMigration();
   };
 
   exports.deleteAllAccounts = function () {

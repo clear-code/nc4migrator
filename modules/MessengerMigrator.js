@@ -299,7 +299,9 @@ MessengerMigrator.prototype = {
       });
   },
 
-  // Entry Point
+  /**
+   * @deprecated
+   */
   upgradePrefs: function () {
     // Reset some control vars, necessary in turbo mode.
     this.resetState();

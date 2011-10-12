@@ -43,7 +43,9 @@
     get migrationProgressMeter() $("migration-progress-meter"),
     get migrationProgressUndeterminedMeter() $("migration-progress-undetermined-meter"),
 
-    get migrationResultMessage() $("migration-result-message")
+    get migrationResultMessage() $("migration-result-message"),
+
+    get finishPage() $("finish-page")
   };
 
   var Wizard = {
@@ -53,9 +55,12 @@
 
     onLoad: function () {
       elements.wizard.setAttribute("title", Messages.getLocalized("title", ""));
+      elements.profileListPage.setAttribute("label", Messages.getLocalized("start", ""));
       elements.profileListPageMessage.setAttribute("value", Messages.getLocalized("profileList", ""));
       elements.confirmPageMessage.setAttribute("value", Messages.getLocalized("confirmation", ""));
       elements.migratingPageMessage.setAttribute("value", Messages.getLocalized("migrating", ""));
+      elements.finishPage.setAttribute("label", Messages.getLocalized("finish", ""));
+      elements.wizard.currentPage = elements.wizard.currentPage; // reset label
     },
 
     onFinish: function () {

@@ -473,7 +473,7 @@ var Util = {
   getDiskQuota: function (targetDirectory) {
     targetDirectory = Util.getFile(targetDirectory);
 
-    let getDiskSpace = this.getDiskSpaceFunction;
+    let getDiskSpace = this.getDiskSpace;
 
     if (!getDiskSpace)
       return this.getDiskQuotaLegacy(targetDirectory);

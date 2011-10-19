@@ -112,10 +112,11 @@ var MigrationManager = {
   },
 
   beginWizard: function () {
+    let closeFeature = Prefs.get("extensions.nc4migrator.cancellable", true) ? "" : ",close=no" ;
     Util.openDialog(
       "chrome://nc4migrator/content/migration-wizard.xul",
       "nc4migrator:migrationWizard",
-      "chrome,titlebar,dialog,modal,resizable,centerscreen,close=no",
+      "chrome,titlebar,dialog,modal,resizable,centerscreen" + closeFeature,
       null,
       Util.getMainWindow()
     );

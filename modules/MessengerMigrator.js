@@ -529,7 +529,9 @@ MessengerMigrator.prototype = {
 
   migrateImapAccounts: function (identity) {
     // returns created identities
-    return this.migrationTargetImapServers.map(function (server, idx) {
+    // XXX: Migrate the first target imap server only.
+    let targetServer = this.migrationTargetImapServers[0] || null;
+    return !targetServer ? [] : [targetServer].map(function (server, idx) {
       let isDefaultAccount = idx === 0;
       return this.migrateImapAccount(identity, server, isDefaultAccount);
     }, this);

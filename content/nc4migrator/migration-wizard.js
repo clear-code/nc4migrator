@@ -61,6 +61,7 @@
       elements.migratingPageMessage.setAttribute("value", Messages.getLocalized("migrating", ""));
       elements.finishPage.setAttribute("label", Messages.getLocalized("finish", ""));
       elements.wizard.currentPage = elements.wizard.currentPage; // reset label
+      Wizard.canCancel = false;
     },
 
     onFinish: function () {
@@ -134,8 +135,6 @@
       wizard.canAdvance = false;
       wizard.canRewind  = false;
 
-      this.canCancel = false;
-
       let that = this;
       this.currentMigrator
         .migrate(function onProgress(progress) {
@@ -154,8 +153,6 @@
           wizard.canAdvance = true;
           wizard.canRewind  = true;
           wizard.advance(null); // proceed next page
-
-          that.canCancel = true;
         });
     },
 
@@ -316,6 +313,7 @@
     },
     set canCancel(value) {
       elements.wizard._cancelButton.disabled = !value;
+      elements.wizard._cancelButton.hidden = !value;
       return value;
     }
   };

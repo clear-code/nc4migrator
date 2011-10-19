@@ -293,6 +293,11 @@
     },
 
     confirmToRestart: function () {
+      if (Prefs.get("extensions.nc4migrator.forceRestart", false)) {
+        Util.restartApplication();
+        return;
+      }
+
       const BUTTON_RESTART = 0;
       const BUTTON_STAY    = 1;
       let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +

@@ -13,6 +13,7 @@
   const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
   const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
+  const Prefs = new Preferences("");
   const Messages = new Preferences("extensions.nc4migrator.wizard.");
 
   function $(id) document.getElementById(id);
@@ -61,7 +62,11 @@
       elements.migratingPageMessage.setAttribute("value", Messages.getLocalized("migrating", ""));
       elements.finishPage.setAttribute("label", Messages.getLocalized("finish", ""));
       elements.wizard.currentPage = elements.wizard.currentPage; // reset label
-      Wizard.canCancel = false;
+
+      if (!this.globalCanCancel) {
+        Wizard.canCancel = false;
+        elements.wizard._cancelButton.hidden = true;
+      }
     },
 
     onFinish: function () {
@@ -135,6 +140,9 @@
       wizard.canAdvance = false;
       wizard.canRewind  = false;
 
+      if (this.globalCanCancel)
+        Wizard.canCancel = false;
+
       let that = this;
       this.currentMigrator
         .migrate(function onProgress(progress) {
@@ -153,6 +161,9 @@
           wizard.canAdvance = true;
           wizard.canRewind  = true;
           wizard.advance(null); // proceed next page
+
+          if (that.globalCanCancel)
+            Wizard.canCancel = true;
         });
     },
 
@@ -307,13 +318,15 @@
 
     currentMigrator: null,
 
+    get globalCanCancel() {
+      return Prefs.get("extensions.nc4migrator.cancellable", true);
+    },
 
     get canCancel() {
       return !elements.wizard._cancelButton.disabled;
     },
     set canCancel(value) {
       elements.wizard._cancelButton.disabled = !value;
-      elements.wizard._cancelButton.hidden = !value;
       return value;
     }
   };

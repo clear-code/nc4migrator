@@ -454,6 +454,7 @@ MessengerMigrator.prototype = {
     this.migratePref(this.PREF_4X_NETWORK_HOSTS_SMTP_SERVER, server, "hostname");
     this.migratePref(this.PREF_4X_MAIL_SMTP_NAME, server, "username");
     this.migratePref(this.PREF_4X_MAIL_SMTP_SSL, server, "trySSL");
+    server.port = 25; // NC4 only supports outgoing port 25.
   },
 
   migratePopAccount: function (server) {

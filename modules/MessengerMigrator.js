@@ -661,7 +661,7 @@ MessengerMigrator.prototype = {
   },
 
   get quotaCalculationTimeout() Prefs.get("extensions.nc4migrator.quotaCalculation.timeout", 1000 * 60),
-  get quotaCalculationMaxSize() Prefs.get("extensions.nc4migrator.quotaCalculation.maxSize", 1000 * 1000 * 1000),
+  get quotaCalculationMaxSize() Number(Prefs.get("extensions.nc4migrator.quotaCalculation.maxSize", 1000 * 1000 * 1000)),
   get elapsedTimePer1MB() Number(Prefs.get("extensions.nc4migrator.elapsedTimePer1MB", "0.309822017")),
 
   getLocalMailFolderQuota: function () {

@@ -97,7 +97,7 @@ var MigrationManager = {
 
     let targetDirectory = Util.getSpecialDirectory("ProfD");
     return Util.getDiskQuota(targetDirectory).next(function (diskSpaceInByte) {
-      var requiredDiskSpace = Prefs.get("extensions.nc4migrator.requiredDiskSpace", 10 * 1024 * 1024 * 1024);
+      var requiredDiskSpace = Number(Prefs.get("extensions.nc4migrator.requiredDiskSpace", 10 * 1024 * 1024 * 1024));
       if (requiredDiskSpace && diskSpaceInByte < requiredDiskSpace) {
         Util.alert(
           Messages.getLocalized("availSpaceCheck.title", ""),

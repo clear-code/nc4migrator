@@ -115,7 +115,7 @@ var MigrationManager = {
     Util.openDialog(
       "chrome://nc4migrator/content/migration-wizard.xul",
       "nc4migrator:migrationWizard",
-      "chrome,titlebar,dialog,modal,resizable,centerscreen",
+      "chrome,titlebar,dialog,modal,resizable,centerscreen,close=no",
       null,
       Util.getMainWindow()
     );

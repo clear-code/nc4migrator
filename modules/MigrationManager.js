@@ -111,14 +111,14 @@ var MigrationManager = {
     });
   },
 
-  beginWizard: function () {
+  beginWizard: function (migrated) {
     let closeFeature = Prefs.get("extensions.nc4migrator.cancellable", true) ? "" : ",close=no" ;
     Util.openDialog(
+      Util.getMainWindow(),
       "chrome://nc4migrator/content/migration-wizard.xul",
       "nc4migrator:migrationWizard",
       "chrome,titlebar,dialog,modal,resizable,centerscreen" + closeFeature,
-      null,
-      Util.getMainWindow()
+      [migrated]
     );
   },
 

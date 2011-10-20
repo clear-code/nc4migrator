@@ -64,9 +64,12 @@
       elements.wizard.currentPage = elements.wizard.currentPage; // reset label
 
       if (!this.globalCanCancel) {
-        Wizard.canCancel = false;
+        this.canCancel = false;
         elements.wizard._cancelButton.hidden = true;
       }
+
+      if (window.arguments.length && window.arguments[0])
+        this.migrated = window.arguments[0];
     },
 
     onFinish: function () {
@@ -86,13 +89,14 @@
 
       switch (button) {
       case BUTTON_CONTINUE:
-        setTimeout(function () {
-          MigrationManager.beginWizard();
-        }, 100);
+        setTimeout(function (migrated) {
+          MigrationManager.beginWizard(migrated);
+        }, 100, this.migrated);
         elements.wizard.calcel();
         break;
       case BUTTON_EXIT:
-        this.confirmToRestart();
+        if (Wizard.migrated)
+          this.confirmToRestart();
         elements.wizard.cancel();
         break;
       }
@@ -150,6 +154,7 @@
           elements.migrationProgressMeter.value = percentage;
         })
         .next(function () {
+          that.migrated = true;
           return StringBundle.nc4migrator.formatStringFromName("migrationSuccess", [elements.migrationProfile.value], 1);
         })
         .error(function (x) {
@@ -322,6 +327,7 @@
     },
 
     currentMigrator: null,
+    migrated : false,
 
     get globalCanCancel() {
       return Prefs.get("extensions.nc4migrator.cancellable", true);

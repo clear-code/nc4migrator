@@ -568,10 +568,31 @@ var Util = {
       .getMostRecentWindow("mail:3pane");
   },
 
-  openDialog: function (url, id, attr, args, owner) {
-    let windowWatcher = Cc['@mozilla.org/embedcomp/window-watcher;1']
-	  .getService(Ci.nsIWindowWatcher);
-    windowWatcher.openWindow(owner || null, url, id, attr, args || null);
+  openDialog: function (owner, url, name, features, arguments) {
+    let windowWatcher = Cc["@mozilla.org/embedcomp/window-watcher;1"]
+      .getService(Ci.nsIWindowWatcher);
+
+    if (arguments !== undefined && arguments !== null) {
+      let array = Cc["@mozilla.org/supports-array;1"]
+                    .createInstance(Ci.nsISupportsArray);
+      arguments.forEach(function(aItem) {
+        if (aItem === null ||
+          aItem === void(0) ||
+          aItem instanceof Ci.nsISupports) {
+          array.AppendElement(aItem);
+        } else {
+          let variant = Cc["@mozilla.org/variant;1"]
+                        .createInstance(Ci.nsIVariant)
+                        .QueryInterface(Ci.nsIWritableVariant);
+          variant.setFromVariant(aItem);
+          aItem = variant;
+        }
+        array.AppendElement(aItem);
+      }, this);
+      arguments = array;
+    }
+
+    windowWatcher.openWindow(owner || null, url, name, features, arguments || null);
   },
 
   // ============================================================

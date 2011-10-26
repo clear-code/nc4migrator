@@ -5,6 +5,7 @@
      0<name><32bytes>0ProfileLocation0<path>
    (32 = DESC_SIZE, defined on
     http://mxr.mozilla.org/mozilla1.8/source/modules/libreg/src/reg.h)
+   if it is a deleted profile, it has "...0Temporary0Deleted0" following the part above.
 */
 
 var EXPORTED_SYMBOLS = ["getProfiles"];
@@ -44,7 +45,7 @@ function getProfilesFromBinary(aByteArray)
 log('getProfilesFromBinary');
 	var string = '';
 	var octet;
-	for (var i in aByteArray)
+	for (let i in aByteArray)
 	{
 		octet = aByteArray[i];
 		string += (
@@ -58,10 +59,15 @@ log('getProfilesFromBinary');
 	const DESCRIPTION_SIZE     = 32;
 	const PADDING_SIZE         = 1;
 
-	var profileService = Components
+	var profileService, availableProfiles;
+	try {
+		profileService = Components
 			.classes['@mozilla.org/comm4xProfile;1']
 			.createInstance(Components.interfaces.nsIComm4xProfile);
-	var availableProfiles = profileService.getProfileList({});
+		availableProfiles = profileService.getProfileList({});
+	}
+	catch(e) {
+	}
 
 	var profiles = [];
 	var from = 0;
@@ -72,31 +78,51 @@ log('getProfilesFromBinary');
 			from = index+PADDING_SIZE+PROFILE_LOCATION_KEY.length+PADDING_SIZE;
 			continue;
 		}
-		var current = index+PADDING_SIZE+PROFILE_LOCATION_KEY.length+PADDING_SIZE;
-		var endPoint = string.indexOf('\n', current);
+		let current = index+PADDING_SIZE+PROFILE_LOCATION_KEY.length+PADDING_SIZE;
+		let endPoint = string.indexOf('\n', current);
 		if (endPoint < 0) {
 			break;
 		}
-		var path = string.substring(current, endPoint);
-		if (!path) {
-			from = endPoint+1;
+
+		from = endPoint+1;
+
+		let path = string.substring(current, endPoint);
+		if (!path)
 			continue;
-		}
-		var part = string.substring(0, index-DESCRIPTION_SIZE);
-		var name = part.substring(part.lastIndexOf('\n')+1);
-		if (!name) {
-			from = endPoint+1;
+
+		let part = string.substring(0, index-DESCRIPTION_SIZE);
+		let name = part.substring(part.lastIndexOf('\n')+1);
+		if (!name)
 			continue;
-		}
-		for (var i in availableProfiles) // exclude removed profiles
-		{
-			if (availableProfiles[i] == name) {
-				profiles.push({ name : name, path : path });
-				break;
-			}
-		}
+
 		string = string.substring(string.indexOf('\n', current));
 		from = 0;
+
+		let mayBeDeleted = string.match(/\nDeleted(?:\n|$)/);
+		let deleted = false;
+		if (mayBeDeleted) {
+			let deletedFlagPosition = string.indexOf(mayBeDeleted[0]);
+			let nextProfilePosition = string.indexOf('\n'+PROFILE_LOCATION_KEY+'\n');
+			if (nextProfilePosition < 0) {
+				deleted = deletedFlagPosition > -1;
+			}
+			else if (deletedFlagPosition > -1) {
+				deleted = deletedFlagPosition < nextProfilePosition;
+			}
+			if (deleted)
+				string = string.substring(deleted);
+		}
+
+		if (!deleted && availableProfiles) {
+			for (let i in availableProfiles) // exclude removed profiles
+			{
+				if (availableProfiles[i] == name) {
+					profiles.push({ name : name, path : path });
+					break;
+				}
+			}
+		}
+
 	}
 log(profiles.length+' profiles found from the registory');
 	return profiles;

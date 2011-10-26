@@ -55,6 +55,14 @@
     // ------------------------------------------------------------
 
     onLoad: function () {
+      if (!this.ncProfiles.length) {
+        Util.alert(Messages.getLocalized("noProfile.title", ""),
+                   Messages.getLocalized("noProfile.message", ""),
+                   window);
+        window.close();
+        return;
+      }
+
       elements.wizard.setAttribute("title", Messages.getLocalized("title", ""));
       elements.profileListPage.setAttribute("label", Messages.getLocalized("start", ""));
       elements.profileListPageMessage.setAttribute("value", Messages.getLocalized("profileList", ""));

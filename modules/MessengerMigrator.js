@@ -48,6 +48,11 @@ const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {
 
 const Prefs = new Preferences("");
 
+const PrefService = Cc["@mozilla.org/preferences-service;1"]
+                      .getService(Ci.nsIPrefService)
+                      .getBranch(this._prefBranch)
+                      .QueryInterface(Ci.nsIPrefBranch2);
+
 function MessengerMigrator(prefObject, options) {
   options = options || {};
   // prefObject, profile
@@ -220,6 +225,8 @@ MessengerMigrator.prototype = {
 
     let that = this;
 
+    this.backup = this.backupAllPrefs();
+
     return Deferred.next((totalSteps++, function checkImapServers() {
       if (!that.migrationTargetImapServers.length)
         throw StringBundle.nc4migrator.GetStringFromName("migrationError_noTargetedImapServersFound");
@@ -294,6 +301,7 @@ MessengerMigrator.prototype = {
       }))
       .next((totalSteps++, function postProcess() {
         progressStep();
+        that.overrideSpecifiedPrefs();
         temporaryIdentity.clearAllValues();
       }))
       .error(function (x) {
@@ -301,6 +309,14 @@ MessengerMigrator.prototype = {
           temporaryIdentity.clearAllValues();
         throw x;
       });
+  },
+
+  backupAllPrefs: function () {
+    var values = {};
+    PrefService.getChildList(prefix, {}).forEach(function(aPref) {
+      values[aPref] = Prefs.get(aPref);
+    });
+    return values;
   },
 
   /**
@@ -410,6 +426,43 @@ MessengerMigrator.prototype = {
     let localMsgFolder = Services.accountManager.localFoldersServer.rootMsgFolder;
     let archiveFolderURI = localMsgFolder.URI + "/Archives";
     identity.archiveFolder = archiveFolderURI;
+  },
+
+  overrideSpecifiedPrefs: function () {
+    var prefix = 'extensions.nc4migrator.override.';
+    var backup = this.backup;
+    PrefService.getChildList(prefix, {}).forEach(function(aPref) {
+      var key = aPref.replace(prefix, '');
+      var value = Prefs.get(aPref);
+      var shouldClear = (value == '[[CLEAR]]');
+      Util.log('override: '+aPref+' = '+value);
+      if (key.indexOf('*') > -1) {
+        let regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
+        PrefService.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
+          if (aPref in backup || !regexp.test(aPref)) return;
+          if (shouldClear) {
+            Util.log('clear '+aPref);
+            this.clearPref(aPref);
+          }
+          else {
+            Util.log('override '+aPref+' by '+value);
+            this.setPref(aPref, value);
+          }
+        }, this);
+      }
+      else {
+        if (key in backup) return;
+        if (shouldClear) {
+          Util.log('clear '+key);
+          this.clearPref(key);
+        }
+        else {
+            Util.log('override '+key+' by '+value);
+          this.setPref(key, value);
+        }
+      }
+    }, this);
+    Util.log('override:complete');
   },
 
   resetState: function () {

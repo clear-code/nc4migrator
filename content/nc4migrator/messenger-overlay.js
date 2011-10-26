@@ -55,7 +55,7 @@ var Nc4Migrator = (function () {
         }).next(function() {
           if (exports.getConcreteAccounts().length) {
             okCallback();
-          } else {
+          } else if (Prefs.get("extensions.nc4migrator.fallbackToDefaultStartup", true)) {
             originalAutoConfigWizard(okCallback);
           }
         });

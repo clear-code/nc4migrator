@@ -754,6 +754,11 @@ MessengerMigrator.prototype = {
     var oldMailDir = this.n4MailDirectory;
     var mailDir = localFoldersServer.localPath;
 
+    if (Prefs.get("extensions.nc4migrator.shareOldMailbox", false)) {
+      localFoldersServer.localPath = oldMailDir;
+      return Deferred.next(function() {});
+    }
+
     Util.log("Now, migrate %s => %s",
              oldMailDir && oldMailDir.path, mailDir && mailDir.path);
 

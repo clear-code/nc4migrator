@@ -442,11 +442,11 @@ MessengerMigrator.prototype = {
           if (aPref in backup || !regexp.test(aPref)) return;
           if (shouldClear) {
             Util.log('clear '+aPref);
-            this.clearPref(aPref);
+            Prefs.reset(aPref);
           }
           else {
             Util.log('override '+aPref+' by '+value);
-            this.setPref(aPref, value);
+            Prefs.set(aPref, value);
           }
         }, this);
       }
@@ -454,11 +454,11 @@ MessengerMigrator.prototype = {
         if (key in backup) return;
         if (shouldClear) {
           Util.log('clear '+key);
-          this.clearPref(key);
+          Prefs.reset(key);
         }
         else {
-            Util.log('override '+key+' by '+value);
-          this.setPref(key, value);
+          Util.log('override '+key+' by '+value);
+          Prefs.set(key, value);
         }
       }
     }, this);

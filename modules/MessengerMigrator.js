@@ -313,7 +313,7 @@ MessengerMigrator.prototype = {
 
   backupAllPrefs: function () {
     var values = {};
-    PrefService.getChildList(prefix, {}).forEach(function(aPref) {
+    PrefService.getChildList("", {}).forEach(function(aPref) {
       values[aPref] = Prefs.get(aPref);
     });
     return values;

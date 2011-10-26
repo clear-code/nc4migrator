@@ -145,7 +145,7 @@ var Util = {
       if (typeof fileTransformer === "function") {
         try {
           let transformed = fileTransformer(toDir, fromDir);
-          if (transformed)
+          if (transformed && transformed != toDir)
             toDir = transformed;
         } catch (x) {
           Util.log("deferredCopyDirectory: " + x);
@@ -227,7 +227,7 @@ var Util = {
   readDirectory: function (directory) {
     directory = Util.getFile(directory);
 
-    if (directory.isDirectory()) {
+    if (directory.exists() && directory.isDirectory()) {
       let entries = directory.directoryEntries;
       let array = [];
       while (entries.hasMoreElements())

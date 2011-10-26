@@ -776,17 +776,27 @@ MessengerMigrator.prototype = {
           if (!fromFile.isDirectory())
             return file;
 
+          if (/\.sbd$/i.test(file.leafName)) {
+            let folderFile = file.parent.clone();
+            folderFile.append(file.leafName.replace(/\.sbd$/i, ""));
+            if (folderFile.exists())
+              return file;
+          }
+
+          // create new folder file for the container directory
           if (file.exists())
             file.remove(true);
-
-          // Dummy file
           file.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
 
-          // When sub directories found, rename them
+          // Thunderbird requires the suffix ".sbd" for the container directory of sub directories
           let subDir = file.parent.clone();
           subDir.append(file.leafName + ".sbd");
           Util.log("%s renamed to %s", file.path, subDir.path);
-          return subDir;
+          file = subDir;
+          if (file.exists())
+            file.remove(true);
+
+          return file;
         },
         onProgress
       );
@@ -967,11 +977,19 @@ var LocalFolderMigrator = {
     Util.log("sourceDir => " + sourceDir.path);
     Util.log("destDir => " + destDir.path);
 
+    if (destDir.exists())
+      destDir.remove(true);
+
+    // create blank new folder as the container
+    destDir.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
+
     var that = this;
     return Util.deferredCopyDirectory(
       sourceDir, destDir, directoryNameTransformer, onProgress
     ).next(function () {
-      that.cleanDirectory(destDir);
+      let actualDestDir = destDir.parent.clone();
+      actualDestDir.append(destDir.leafName + ".sbd");
+      that.cleanDirectory(actualDestDir);
     });
   },
 

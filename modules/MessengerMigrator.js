@@ -908,10 +908,12 @@ var IncomingServerTools = {
       ((serverPort == defaultSecureServerPort) && isSecure);
 
     // Construct pretty name from username and hostname
-    var constructedPrettyName = userName + "@" + hostName;
+    var constructedPrettyName = userName;
+    if (userName.indexOf("@") < 0)
+      constructedPrettyName += "@" + hostName;
 
     // If the port is valid and not default, add port value to the pretty name
-    if ((serverPort > 0) && (!isItDefaultPort))
+    if ((serverPort > 0) && (!isItDefaultPort) && Prefs.get("extensions.nc4migrator.prettyNameWithNotDefaultPortNumber", true))
       constructedPrettyName = constructedPrettyName + ":" + serverPort;
 
     // Format the pretty name

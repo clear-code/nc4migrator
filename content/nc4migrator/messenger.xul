@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE dialog SYSTEM "chrome://nc4migrator/locale/nc4migrator.dtd">
-<?xml-stylesheet href="messenger.css"?>
+<!DOCTYPE overlay SYSTEM "chrome://nc4migrator/locale/nc4migrator.dtd">
 <overlay xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
   <menupopup id="taskPopup">
     <menuitem id="nc4migrator-migration-wizard"

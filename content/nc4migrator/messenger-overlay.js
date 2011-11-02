@@ -9,6 +9,14 @@ var Nc4Migrator = (function () {
 
   const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
   const Prefs = new Preferences("");
+  const Messages = {
+    _messages : new Preferences("extensions.nc4migrator.wizard."),
+    getLocalized: function (key, defaultValue) {
+      if (this._messages.has(key + ".override"))
+        key += ".override";
+      return this._messages.getLocalized(key, defaultValue);
+    }
+  };
 
   exports.beginMigration = function () {
     return MigrationManager.beginMigration();
@@ -45,7 +53,7 @@ var Nc4Migrator = (function () {
     window.removeEventListener("DOMContentLoaded", onLoad, false);
 
     document.getElementById("nc4migrator-migration-wizard")
-      .setAttribute("label", Prefs.getLocalized("extensions.nc4migrator.wizard.menu", ""));
+      .setAttribute("label", Messages.getLocalized("menu", ""));
 
     if (window.AutoConfigWizard) {
       let originalAutoConfigWizard = window.AutoConfigWizard;

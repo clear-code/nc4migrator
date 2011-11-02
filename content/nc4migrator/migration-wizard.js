@@ -14,13 +14,13 @@
 
   const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
   const Prefs = new Preferences("");
-  const MessagesOriginal = new Preferences("extensions.nc4migrator.wizard.");
 
   const Messages = {
+    _messages : new Preferences("extensions.nc4migrator.wizard."),
     getLocalized: function (key, defaultValue) {
-      if (MessagesOriginal.has(key + ".override"))
+      if (this._messages.has(key + ".override"))
         key += ".override";
-      return MessagesOriginal.getLocalized(key, defaultValue);
+      return this._messages.getLocalized(key, defaultValue);
     }
   };
 

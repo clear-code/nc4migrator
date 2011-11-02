@@ -348,7 +348,7 @@ var Util = {
       notations.shift();
     }
 
-    return (notations[0] ? number.toFixed(1) : number) + " " + notations[0] + "B";
+    return String(notations[0] ? number.toFixed(1) : number).replace(/\.0+$/, '') + " " + notations[0] + "B";
   },
 
   log: function () {

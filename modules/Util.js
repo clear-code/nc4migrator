@@ -497,10 +497,11 @@ var Util = {
       return this.getDiskQuotaLegacy(targetDirectory);
 
     let tryCount = 0;
+    const tryCountMax = 42;
     return Deferred.next(function tryGetDiskSpace() {
       tryCount++;
       let size = getDiskSpace(targetDirectory);
-      return size < 0 && tryCount < 10 ? Deferred.next(tryGetDiskSpace) : size ;
+      return size < 0 && tryCount < tryCountMax ? Deferred.wait(0.3).next(tryGetDiskSpace) : size;
     });
   },
 

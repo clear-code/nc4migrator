@@ -14,7 +14,15 @@
 
   const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
   const Prefs = new Preferences("");
-  const Messages = new Preferences("extensions.nc4migrator.wizard.");
+  const MessagesOriginal = new Preferences("extensions.nc4migrator.wizard.");
+
+  const Messages = {
+    getLocalized: function (key, defaultValue) {
+      if (MessagesOriginal.has(key + ".override"))
+        key += ".override";
+      return MessagesOriginal.getLocalized(key, defaultValue);
+    }
+  };
 
   function $(id) document.getElementById(id);
   var createElement = Util.getElementCreator(document);

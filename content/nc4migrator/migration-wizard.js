@@ -76,28 +76,43 @@
     },
 
     onFinish: function () {
-      const BUTTON_CONTINUE = 0;
-      const BUTTON_EXIT     = 1;
-      let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
-                  Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
-      let button = Util.confirmEx(
-        window,
-        Messages.getLocalized("next.title", ""),
-        Messages.getLocalized("next.message", ""),
-        flags,
-        Messages.getLocalized("next.continue", ""),
-        Messages.getLocalized("next.exit", ""),
-        null
-      );
+      let continueButtonIndex;
+      let button;
+      if (Messages.getLocalized("next.continue", "")) {
+        continueButtonIndex = 0;
+        let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
+                    Ci.nsIPromptService.BUTTON_POS_1 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
+        button = Util.confirmEx(
+          window,
+          Messages.getLocalized("next.title", ""),
+          Messages.getLocalized("next.message", ""),
+          flags,
+          Messages.getLocalized("next.continue", ""),
+          Messages.getLocalized("next.exit", ""),
+          null
+        );
+      } else {
+        continueButtonIndex = -1;
+        let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
+        button = Util.confirmEx(
+          window,
+          Messages.getLocalized("next.title", ""),
+          Messages.getLocalized("next.message", ""),
+          flags,
+          Messages.getLocalized("next.exit", ""),
+          null,
+          null
+        );
+      }
 
       switch (button) {
-      case BUTTON_CONTINUE:
+      case continueButtonIndex:
         setTimeout(function (migrated) {
           MigrationManager.beginWizard(migrated);
         }, 100, this.migrated);
         elements.wizard.calcel();
         break;
-      case BUTTON_EXIT:
+      default:
         if (Wizard.migrated)
           this.confirmToRestart();
         elements.wizard.cancel();
@@ -325,7 +340,7 @@
       case BUTTON_RESTART:
         Util.restartApplication();
         break;
-      case BUTTON_STAY:
+      default:
         break;
       }
     },

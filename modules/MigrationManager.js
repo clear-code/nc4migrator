@@ -102,7 +102,7 @@ var MigrationManager = {
         Util.alert(
           Messages.getLocalized("availSpaceCheck.title", ""),
           Messages.getLocalized("availSpaceCheck.message_before", "") +
-            Util.formatBytes(requiredDiskSpace) +
+            Util.formatBytes(requiredDiskSpace).join(" ") +
             Messages.getLocalized("availSpaceCheck.message_after", "")
         );
       } else {

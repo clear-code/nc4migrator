@@ -280,15 +280,18 @@
 
       return migrator.getLocalMailFolderQuota()
               .next(function(aResult) {
-                var quota = Util.formatBytes(aResult.size);
-                var seconds = Math.round(migrator.elapsedTimePer1MB * (aResult.size || 1) / (1024 * 1024));
+                var quota = Util.formatBytes(aResult.size).join(" ");
+                var sizeInMB = (aResult.size || 1) / (1024 * 1024);
+                var estimatedTime = Util.formatTime(Math.round(migrator.elapsedTimePer1MB * sizeInMB)).join(" ");
+
                 if (aResult.complete) {
                   elements.migrationQuota.value = quota;
-                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedElapsedTime", [seconds], 1);
+                  elements.migrationEstimatedTime.value = estimatedTime;
                 } else {
-                  elements.migrationQuota.value = StringBundle.nc4migrator.formatStringFromName("calculatedQuotaOver", [quota], 1);
-                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedElapsedTimeOver", [seconds], 1);
+                  elements.migrationQuota.value = StringBundle.nc4migrator.formatStringFromName("calculatedValueOver", [quota], 1);
+                  elements.migrationEstimatedTime.value = StringBundle.nc4migrator.formatStringFromName("calculatedValueOver", [estimatedTime], 1);
                 }
+
                 elements.migrationQuotaRow.hidden = false;
                 elements.migrationEstimatedTimeRow.hidden = false;
                 elements.migrationQuotaAndEstimatedTimeRow.hidden = true;

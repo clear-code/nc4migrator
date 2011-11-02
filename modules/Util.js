@@ -8,6 +8,7 @@ const Cr = Components.results;
 const { Browser } = Cu.import('resource://nc4migrator-modules/Browser.js', {});
 const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 const { NetUtil } = Cu.import("resource://gre/modules/NetUtil.jsm", {});
+const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
 
 const Application = Cc['@mozilla.org/steel/application;1']
   .getService(Ci.steelIApplication);
@@ -348,7 +349,24 @@ var Util = {
       notations.shift();
     }
 
-    return String(notations[0] ? number.toFixed(1) : number).replace(/\.0+$/, '') + " " + notations[0] + "B";
+    return [number.toFixed(0), notations[0] + "B"];
+  },
+
+  formatTime: function formatTime(sec, precise) {
+    precise = precise || 0;
+
+    function formatter(number, bases) {
+      let [base, name] = bases.shift();
+      if ((number / base) >= 1 && bases.length)
+        return formatter(number / base, bases);
+      return [number.toFixed(precise), name];
+    }
+
+    return formatter(sec, [
+      [60, StringBundle.nc4migrator.GetStringFromName("timeFormat_second")],
+      [60, StringBundle.nc4migrator.GetStringFromName("timeFormat_minute")],
+      [24, StringBundle.nc4migrator.GetStringFromName("timeFormat_hour")]
+    ]);
   },
 
   log: function () {

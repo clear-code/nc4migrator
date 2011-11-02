@@ -71,11 +71,6 @@
       elements.finishPage.setAttribute("label", Messages.getLocalized("finish", ""));
       elements.wizard.currentPage = elements.wizard.currentPage; // reset label
 
-      if (!this.globalCanCancel) {
-        this.canCancel = false;
-        elements.wizard._cancelButton.hidden = true;
-      }
-
       if (window.arguments.length && window.arguments[0])
         this.migrated = window.arguments[0];
     },
@@ -356,18 +351,14 @@
     ].reduce(function (hash, key, id) (hash[key] = id, hash), {}),
 
     enterPhase: function (phase) {
-      let canCancel = false;
+      let canCancel = this.globalCanCancel;
 
       switch (phase) {
       case this.phase.showProfileList:
+      case this.phase.enterConfirmPage:
         canCancel = true;
         break;
-      case this.phase.enterConfirmPage:
-        canCancel = false;
-        break;
       case this.phase.enterMigratingPage:
-        canCancel = false;
-        break;
       case this.phase.enterFinishPage:
         canCancel = false;
         break;
@@ -375,7 +366,7 @@
         throw Error("Unknown phase");
       }
 
-      this.canCancel = this.globalCanCancel && canCancel;
+      this.canCancel = canCancel;
     }
   };
 

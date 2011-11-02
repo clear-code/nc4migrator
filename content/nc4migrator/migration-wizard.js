@@ -122,6 +122,7 @@
 
     profileListUpdated: false,
     onProfileListPageShow: function () {
+      this.enterPhase(this.phase.showProfileList);
       if (this.profileListUpdated)
         return;
       this.updateProfileList();
@@ -129,6 +130,7 @@
     },
 
     onConfirmationPageShow: function () {
+      this.enterPhase(this.phase.enterConfirmPage);
       elements.wizard.canAdvance = false;
       this.setProfile(this.getSelectedProfile())
         .next(function() {
@@ -137,6 +139,7 @@
     },
 
     onMigratingPageShow: function () {
+      this.enterPhase(this.phase.enterMigratingPage);
       elements.migratingProfile.value = elements.migrationProfile.value;
       elements.migratingAccount.value = elements.migrationAccount.value;
 
@@ -151,9 +154,6 @@
 
       wizard.canAdvance = false;
       wizard.canRewind  = false;
-
-      if (this.globalCanCancel)
-        Wizard.canCancel = false;
 
       let that = this;
       this.currentMigrator
@@ -174,13 +174,11 @@
           wizard.canAdvance = true;
           wizard.canRewind  = true;
           wizard.advance(null); // proceed next page
-
-          if (that.globalCanCancel)
-            Wizard.canCancel = true;
         });
     },
 
     onFinishPageShow: function () {
+      this.enterPhase(this.phase.enterFinishPage);
       elements.wizard.canRewind  = false; // never back
     },
 
@@ -347,6 +345,37 @@
     set canCancel(value) {
       elements.wizard._cancelButton.disabled = !value;
       return value;
+    },
+
+    // like enum
+    phase: [
+      "showProfileList",
+      "enterConfirmPage",
+      "enterMigratingPage",
+      "enterFinishPage"
+    ].reduce(function (hash, key, id) (hash[key] = id, hash), {}),
+
+    enterPhase: function (phase) {
+      let canCancel = false;
+
+      switch (phase) {
+      case this.phase.showProfileList:
+        canCancel = true;
+        break;
+      case this.phase.enterConfirmPage:
+        canCancel = false;
+        break;
+      case this.phase.enterMigratingPage:
+        canCancel = false;
+        break;
+      case this.phase.enterFinishPage:
+        canCancel = false;
+        break;
+      default:
+        throw Error("Unknown phase");
+      }
+
+      this.canCancel = this.globalCanCancel && canCancel;
     }
   };
 

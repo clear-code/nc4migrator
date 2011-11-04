@@ -11,7 +11,14 @@ const { MessengerMigrator } = Cu.import('resource://nc4migrator-modules/Messenge
 const { StringBundle } = Cu.import('resource://nc4migrator-modules/StringBundle.js', {});
 const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
 const Prefs = new Preferences("");
-const Messages = new Preferences("extensions.nc4migrator.wizard.");
+const Messages = {
+  _messages : new Preferences("extensions.nc4migrator.wizard."),
+  getLocalized: function (key, defaultValue) {
+    if (this._messages.has(key + ".override"))
+      key += ".override";
+    return this._messages.getLocalized(key, defaultValue);
+  }
+};
 
 function NcProfile(name, profileDirectory, targetImapServers) {
   this.name = name;

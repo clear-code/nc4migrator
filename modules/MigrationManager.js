@@ -119,7 +119,7 @@ var MigrationManager = {
   },
 
   beginWizard: function (migrated) {
-    let closeFeature = Prefs.get("extensions.nc4migrator.cancellable", true) ? "" : ",close=no" ;
+    let closeFeature = Prefs.get("extensions.nc4migrator.cancellable", false) ? "" : ",close=no" ;
     Util.openDialog(
       Util.getMainWindow(),
       "chrome://nc4migrator/content/migration-wizard.xul",

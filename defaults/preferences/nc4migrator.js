@@ -7,11 +7,15 @@ pref("extensions.nc4migrator.wizard.availSpaceCheck.message_before", "chrome://n
 pref("extensions.nc4migrator.wizard.availSpaceCheck.message_after", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.noProfile.title", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.noProfile.message", "chrome://nc4migrator/locale/nc4migrator.properties");
-pref("extensions.nc4migrator.wizard.start", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.profileList.header", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.profileList", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.calculating.header", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.calculating", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.confirmation.header", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.confirmation", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.migrating.header", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.migrating", "chrome://nc4migrator/locale/nc4migrator.properties");
-pref("extensions.nc4migrator.wizard.finish", "chrome://nc4migrator/locale/nc4migrator.properties");
+pref("extensions.nc4migrator.wizard.finish.header", "chrome://nc4migrator/locale/nc4migrator.properties");
 
 pref("extensions.nc4migrator.wizard.reimport.title", "chrome://nc4migrator/locale/nc4migrator.properties");
 pref("extensions.nc4migrator.wizard.reimport.message_before", "chrome://nc4migrator/locale/nc4migrator.properties");
@@ -40,5 +44,5 @@ pref("extensions.nc4migrator.wizard.restart.stay", "chrome://nc4migrator/locale/
 // pref("extensions.nc4migrator.quotaCalculation.timeout", 60000);
 // pref("extensions.nc4migrator.elapsedTimePer1MB", "0.309822017");
 // pref("extensions.nc4migrator.fallbackToDefaultStartup", true);
-// pref("extensions.nc4migrator.cancellable", false);
+// pref("extensions.nc4migrator.cancellable", true);
 // pref("extensions.nc4migrator.forceRestart", false);

@@ -31,11 +31,9 @@
     get wizard() $("nc4migrator-wizard"),
 
     get profileListPage() $("profile-list-page"),
-    get profileListPageMessage() $("profile-list-page-message"),
     get migrationProfileList() $("migration-profile-list"),
 
     get confirmPage() $("confirm-page"),
-    get confirmPageMessage() $("confirm-page-message"),
 
     get migrationProfile() $("migration-profile"),
     get migrationAccount() $("migration-account"),
@@ -46,15 +44,14 @@
     get migrationQuotaAndEstimatedTimeUndetermined() $("migration-quota-and-estimated-time-undetermined"),
     get migrationQuotaAndEstimatedTimeRow() $("migration-quota-and-estimated-time-row"),
 
-    get migratingPageMessage() $("migrating-page-message"),
+    get migratingPage() $("migrating-page"),
     get migratingProfile() $("migrating-profile"),
     get migratingAccount() $("migrating-account"),
     get migrationProgressMeter() $("migration-progress-meter"),
     get migrationProgressUndeterminedMeter() $("migration-progress-undetermined-meter"),
 
-    get migrationResultMessage() $("migration-result-message"),
-
-    get finishPage() $("finish-page")
+    get finishPage() $("finish-page"),
+    get migrationResultMessage() document.querySelector("#finish-page description.wizard-page-message")
   };
 
   var Wizard = {
@@ -72,12 +69,6 @@
       }
 
       elements.wizard.setAttribute("title", Messages.getLocalized("title", ""));
-      elements.profileListPage.setAttribute("label", Messages.getLocalized("start", ""));
-      elements.profileListPageMessage.setAttribute("value", Messages.getLocalized("profileList", ""));
-      elements.confirmPageMessage.setAttribute("value", Messages.getLocalized("confirmation", ""));
-      elements.migratingPageMessage.setAttribute("value", Messages.getLocalized("migrating", ""));
-      elements.finishPage.setAttribute("label", Messages.getLocalized("finish", ""));
-      elements.wizard.currentPage = elements.wizard.currentPage; // reset label
 
       if (window.arguments.length && window.arguments[0])
         this.migrated = window.arguments[0];
@@ -141,18 +132,31 @@
     profileListUpdated: false,
     onProfileListPageShow: function () {
       this.enterPhase(this.phase.showProfileList);
+      this.header = Messages.getLocalized("profileList.header", "");
+      this.message = Messages.getLocalized("profileList", "");
       if (this.profileListUpdated)
         return;
+
       this.updateProfileList();
       this.profileListUpdated = true;
     },
 
     onConfirmationPageShow: function () {
-      this.enterPhase(this.phase.enterConfirmPage);
+      this.enterPhase(this.phase.enterCalculatingPage);
+
+      this.header = Messages.getLocalized("calculating.header", "");
+      this.message = Messages.getLocalized("calculating", "");
       elements.wizard.canAdvance = false;
+      elements.wizard.canRewind  = false;
+
+      let that = this;
       this.setProfile(this.getSelectedProfile())
         .next(function() {
+          that.enterPhase(that.phase.enterConfirmPage);
+          that.header = Messages.getLocalized("confirmation.header", "");
+          that.message = Messages.getLocalized("confirmation", "");
           elements.wizard.canAdvance = true;
+          elements.wizard.canRewind  = true;
         });
     },
 
@@ -160,12 +164,14 @@
       this.enterPhase(this.phase.enterMigratingPage);
       elements.migratingProfile.value = elements.migrationProfile.value;
       elements.migratingAccount.value = elements.migrationAccount.value;
+      this.header = Messages.getLocalized("migrating.header", "");
+      this.message = Messages.getLocalized("migrating", "");
 
       let { wizard } = elements;
 
       if (!this.currentMigrator) {
         let error = StringBundle.nc4migrator.GetStringFromName("migrationError_noMigrator");
-        elements.migrationResultMessage.textContent = StringBundle.nc4migrator.formatStringFromName("migrationError", [error], 1);
+        this.message = StringBundle.nc4migrator.formatStringFromName("migrationError", [error], 1);
         wizard.advance(null); // proceed next page
         return;
       }
@@ -197,6 +203,7 @@
 
     onFinishPageShow: function () {
       this.enterPhase(this.phase.enterFinishPage);
+      this.header = Messages.getLocalized("finish.header", "");
       elements.wizard.canRewind  = false; // never back
     },
 
@@ -356,10 +363,6 @@
     currentMigrator: null,
     migrated : false,
 
-    get globalCanCancel() {
-      return Prefs.get("extensions.nc4migrator.cancellable", true);
-    },
-
     get canCancel() {
       return !elements.wizard._cancelButton.disabled;
     },
@@ -368,22 +371,35 @@
       return value;
     },
 
+    set header(text) {
+      elements.wizard.currentPage.setAttribute("label", text);
+      elements.wizard._wizardHeader.setAttribute("label", text);
+      return text;
+    },
+    set message(text) {
+      let slot = elements.wizard.currentPage.querySelector("description.wizard-page-message");
+      if (slot) slot.textContent = text;
+      return text;
+    },
+
     // like enum
     phase: [
       "showProfileList",
+      "enterCalculatingPage",
       "enterConfirmPage",
       "enterMigratingPage",
       "enterFinishPage"
     ].reduce(function (hash, key, id) (hash[key] = id, hash), {}),
 
     enterPhase: function (phase) {
-      let canCancel = this.globalCanCancel;
+      let canCancel = true;
 
       switch (phase) {
       case this.phase.showProfileList:
       case this.phase.enterConfirmPage:
         canCancel = true;
         break;
+      case this.phase.enterCalculatingPage:
       case this.phase.enterMigratingPage:
       case this.phase.enterFinishPage:
         canCancel = false;

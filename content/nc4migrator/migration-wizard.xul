@@ -23,7 +23,7 @@
               next="confirm-page"
               onpageshow="Wizard.onProfileListPageShow();"
               onpageadvanced="return Wizard.ensureProfileSelected();">
-    <description id="profile-list-page-message"/>
+    <description class="wizard-page-message"/>
     <radiogroup id="migration-profile-list" />
   </wizardpage>
 
@@ -31,7 +31,7 @@
               id="confirm-page"
               next="migrating-page"
               onpageshow="Wizard.onConfirmationPageShow();">
-    <description id="confirm-page-message"/>
+    <description class="wizard-page-message"/>
     <groupbox>
       <grid flex="1">
         <columns>
@@ -68,7 +68,7 @@
               id="migrating-page"
               next="finish-page"
               onpageshow="Wizard.onMigratingPageShow();">
-    <description id="migrating-page-message"/>
+    <description class="wizard-page-message"/>
     <groupbox orient="vertical">
       <grid flex="1">
         <columns>
@@ -98,7 +98,7 @@
               id="finish-page"
               onpageshow="Wizard.onFinishPageShow();">
     <hbox align="start" flex="1">
-      <description id="migration-result-message" flex="1" style="white-space:pre-wrap"/>
+      <description class="wizard-page-message"/>
     </hbox>
   </wizardpage>
 

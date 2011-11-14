@@ -225,7 +225,7 @@ MessengerMigrator.prototype = {
 
     let that = this;
 
-    this.backup = this.backupAllPrefs();
+    this.initialPrefs = this.beforePrefs = this.backupAllPrefs();
 
     return Deferred.next((totalSteps++, function checkImapServers() {
       if (!that.migrationTargetImapServers.length)
@@ -283,6 +283,7 @@ MessengerMigrator.prototype = {
           throw StringBundle.nc4migrator.GetStringFromName("migrationError_nonImapAccount");
 
         that.ensureImapServersCleared();
+        that.beforePrefs = that.backupAllPrefs();
 
         identities = that.migrateImapAccounts(temporaryIdentity);
       }))
@@ -430,7 +431,8 @@ MessengerMigrator.prototype = {
 
   overrideSpecifiedPrefs: function () {
     var prefix = 'extensions.nc4migrator.override.';
-    var backup = this.backup;
+    var initial = this.initialPrefs;
+    var before = this.beforePrefs;
     PrefService.getChildList(prefix, {}).forEach(function(aPref) {
       var key = aPref.replace(prefix, '');
       var value = Prefs.get(aPref);
@@ -439,7 +441,7 @@ MessengerMigrator.prototype = {
       if (key.indexOf('*') > -1) {
         let regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
         PrefService.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
-          if (aPref in backup || !regexp.test(aPref)) return;
+          if ((aPref in before && aPref in initial) || !regexp.test(aPref)) return;
           if (shouldClear) {
             Util.log('clear '+aPref);
             Prefs.reset(aPref);
@@ -451,7 +453,7 @@ MessengerMigrator.prototype = {
         }, this);
       }
       else {
-        if (key in backup) return;
+        if (key in before && key in initial) return;
         if (shouldClear) {
           Util.log('clear '+key);
           Prefs.reset(key);

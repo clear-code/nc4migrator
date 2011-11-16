@@ -2,10 +2,22 @@
    see also: http://surf.ap.seikei.ac.jp/~nakano/diary/?200109c&to=200109276#200109276
 
    structure:
-     0<name><32bytes>0ProfileLocation0<path>
-   (32 = DESC_SIZE, defined on
-    http://mxr.mozilla.org/mozilla1.8/source/modules/libreg/src/reg.h)
-   if it is a deleted profile, it has "...0Temporary0Deleted0" following the part above.
+     0<name:max 512bytes><description:32bytes>0ProfileLocation0<path>
+
+     description: (http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.h#128)
+       0-3  : location
+       4-7  : name
+       8-9  : name length
+       10-11: *type*
+       12-15: left
+       16-19: down
+       20-23: value
+       24-27: value length
+       28-31: parent
+
+     types: (http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.h#68)
+       valid  : 0x0001
+       deleted: 0x0080
 */
 
 var EXPORTED_SYMBOLS = ["getProfiles"];
@@ -58,16 +70,9 @@ log('getProfilesFromBinary');
 	const PROFILE_LOCATION_KEY = 'ProfileLocation';
 	const DESCRIPTION_SIZE     = 32;
 	const PADDING_SIZE         = 1;
-
-	var profileService, availableProfiles;
-	try {
-		profileService = Components
-			.classes['@mozilla.org/comm4xProfile;1']
-			.createInstance(Components.interfaces.nsIComm4xProfile);
-		availableProfiles = profileService.getProfileList({});
-	}
-	catch(e) {
-	}
+	const TYPE_OFFSET          = 10;
+	const TYPE_SIZE            = 12;
+	const TYPE_DELETED         = 0x80;
 
 	var profiles = [];
 	var from = 0;
@@ -95,34 +100,15 @@ log('getProfilesFromBinary');
 		if (!name)
 			continue;
 
-		string = string.substring(string.indexOf('\n', current));
-		from = 0;
+		let description = aByteArray.slice(index - DESCRIPTION_SIZE, index);
+		from = current;
 
-		let mayBeDeleted = string.match(/\nDeleted(?:\n|$)/);
-		let deleted = false;
-		if (mayBeDeleted) {
-			let deletedFlagPosition = string.indexOf(mayBeDeleted[0]);
-			let nextProfilePosition = string.indexOf('\n'+PROFILE_LOCATION_KEY+'\n');
-			if (nextProfilePosition < 0) {
-				deleted = deletedFlagPosition > -1;
-			}
-			else if (deletedFlagPosition > -1) {
-				deleted = deletedFlagPosition < nextProfilePosition;
-			}
-			if (deleted)
-				string = string.substring(deleted);
-		}
+		let nodeType = description.slice(TYPE_OFFSET, TYPE_SIZE);
+		nodeType = nodeType[0] + (nodeType[1] << 8);
+		if (nodeType & TYPE_DELETED)
+			continue;
 
-		if (!deleted && availableProfiles) {
-			for (let i in availableProfiles) // exclude removed profiles
-			{
-				if (availableProfiles[i] == name) {
-					profiles.push({ name : name, path : path });
-					break;
-				}
-			}
-		}
-
+		profiles.push({ name : name, path : path });
 	}
 log(profiles.length+' profiles found from the registory');
 	return profiles;

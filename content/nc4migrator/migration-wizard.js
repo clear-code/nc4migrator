@@ -77,6 +77,7 @@
     onFinish: function () {
       let continueButtonIndex;
       let button;
+
       if (Messages.getLocalized("next.continue", "")) {
         continueButtonIndex = 0;
         let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING +
@@ -93,15 +94,21 @@
       } else {
         continueButtonIndex = -1;
         let flags = Ci.nsIPromptService.BUTTON_POS_0 * Ci.nsIPromptService.BUTTON_TITLE_IS_STRING;
-        button = Util.confirmEx(
-          window,
-          Messages.getLocalized("next.title", ""),
-          Messages.getLocalized("next.message", ""),
-          flags,
-          Messages.getLocalized("next.exit", ""),
-          null,
-          null
-        );
+
+        if (Wizard.migrated) {
+          button = Util.confirmEx(
+            window,
+            Messages.getLocalized("next.title", ""),
+            Messages.getLocalized("next.message", ""),
+            flags,
+            Messages.getLocalized("next.exit", ""),
+            null,
+            null
+          );
+        } else {
+          // Do not display dialog
+          button = !continueButtonIndex;
+        }
       }
 
       switch (button) {

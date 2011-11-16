@@ -1,23 +1,8 @@
-/* Netscape Communicator 4.xのプロファイルを列挙する 
-   see also: http://surf.ap.seikei.ac.jp/~nakano/diary/?200109c&to=200109276#200109276
-
-   structure:
-     0<name:max 512bytes><description:32bytes>0ProfileLocation0<path>
-
-     description: (http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.h#128)
-       0-3  : location
-       4-7  : name
-       8-9  : name length
-       10-11: *type*
-       12-15: left
-       16-19: down
-       20-23: value
-       24-27: value length
-       28-31: parent
-
-     types: (http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.h#68)
-       valid  : 0x0001
-       deleted: 0x0080
+/* Registory parser for Netscape Communicator 4.5 and later
+   see also:
+     * http://surf.ap.seikei.ac.jp/~nakano/diary/?200109c&to=200109276#200109276
+     * http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.h
+     * http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.c
 */
 
 var EXPORTED_SYMBOLS = ["getProfiles"];
@@ -37,12 +22,12 @@ log('getProfiles');
 		const DirectoryService = Components
 				.classes['@mozilla.org/file/directory_service;1']
 				.getService(Components.interfaces.nsIProperties);
-		var file = DirectoryService.get('WinD', Components.interfaces.nsIFile);
+		let file = DirectoryService.get('WinD', Components.interfaces.nsIFile);
 		file.append('nsreg.dat');
 		if (file.exists()) {
 log('nsreg.dat exists');
-			var array = readBinaryFrom(file);
-			return getProfilesFromBinary(array);
+			let bytes = readBinaryFrom(file);
+			return getProfilesFromBinary(bytes);
 		}
 	}
 	catch(e) {
@@ -52,66 +37,166 @@ log('no profile is found');
 	return [];
 }
 
-function getProfilesFromBinary(aByteArray) 
+function getProfilesFromBinary(aBytes) 
 {
 log('getProfilesFromBinary');
-	var string = '';
-	var octet;
-	for (let i in aByteArray)
-	{
-		octet = aByteArray[i];
-		string += (
-				octet == 0 ? '\n' :
-				octet < 0x20 ? '\t' :
-				String.fromCharCode(octet)
-			);
-	}
-
-	const PROFILE_LOCATION_KEY = 'ProfileLocation';
-	const DESCRIPTION_SIZE     = 32;
-	const PADDING_SIZE         = 1;
-	const TYPE_OFFSET          = 10;
-	const TYPE_SIZE            = 12;
-	const TYPE_DELETED         = 0x80;
-
-	var profiles = [];
-	var from = 0;
-	var index;
-	while ((index = string.indexOf('\n'+PROFILE_LOCATION_KEY+'\n', from)) > -1)
-	{
-		if (index < DESCRIPTION_SIZE+PADDING_SIZE+1) {
-			from = index+PADDING_SIZE+PROFILE_LOCATION_KEY.length+PADDING_SIZE;
-			continue;
-		}
-		let current = index+PADDING_SIZE+PROFILE_LOCATION_KEY.length+PADDING_SIZE;
-		let endPoint = string.indexOf('\n', current);
-		if (endPoint < 0) {
-			break;
-		}
-
-		from = endPoint+1;
-
-		let path = string.substring(current, endPoint);
-		if (!path)
-			continue;
-
-		let part = string.substring(0, index-DESCRIPTION_SIZE);
-		let name = part.substring(part.lastIndexOf('\n')+1);
-		if (!name)
-			continue;
-
-		let description = aByteArray.slice(index - DESCRIPTION_SIZE, index);
-		from = current;
-
-		let nodeType = description.slice(TYPE_OFFSET, TYPE_SIZE);
-		nodeType = nodeType[0] + (nodeType[1] << 8);
-		if (nodeType & TYPE_DELETED)
-			continue;
-
-		profiles.push({ name : name, path : path });
-	}
+	var root = getRootDescription(aBytes);
+	var users = root.getNamedChild('Users').children;
+	var profiles = users.map(function(aUserNode) {
+			return {
+				name : aUserNode.name,
+				path : aUserNode.nodeValue.stringValue
+			};
+		});
 log(profiles.length+' profiles found from the registory');
 	return profiles;
+}
+
+function getRootDescription(aBytes)
+{
+	const ROOT_LOCATION        = 0xC;
+	const ROOT_LOCATION_LENGTH = 4;
+	var root = aBytes.slice(ROOT_LOCATION, ROOT_LOCATION + ROOT_LOCATION_LENGTH - 1);
+	return new Description(aBytes, bytesToNumber(root));
+}
+
+function Description(aBytes, aOffset)
+{
+	this.allBytes = aBytes;
+	this.bytes = aBytes.slice(aOffset, aOffset + this.DESCRIPTION_SIZE);
+
+	this.location = bytesToNumber(this.bytes.slice(0, 3));
+	if (this.location != aOffset)
+		throw new Error('invalid description at '+aOffset);
+
+	this.type = bytesToNumber(this.bytes.slice(10, 11));
+
+	this._left   = bytesToNumber(this.bytes.slice(12, 15));
+	this._down   = bytesToNumber(this.bytes.slice(16, 19));
+	this._parent = bytesToNumber(this.bytes.slice(28, 31));
+
+	var nameOffset = bytesToNumber(this.bytes.slice(4, 7));
+	var nameLength = bytesToNumber(this.bytes.slice(8, 9));
+	this.name = bytesToString(this.allBytes.slice(nameOffset, nameOffset + nameLength));
+
+	this._valueOffset = bytesToNumber(this.bytes.slice(20, 23));
+	this._valueLength = bytesToNumber(this.bytes.slice(24, 27));
+}
+Description.prototype = {
+	DESCRIPTION_SIZE : 32,
+	TYPE_NODE        : 0x01,
+	TYPE_DELETED     : 0x80,
+
+	get next()
+	{
+		if (this._left && !this._leftDescription)
+			this._leftDescription = new Description(this.allBytes, this._left);
+		return this._leftDescription && !this._leftDescription.deleted ? this._leftDescription : null ;
+	},
+	get child()
+	{
+		if (this._down && !this._childDescription)
+			this._childDescription = new Description(this.allBytes, this._down);
+		return this._childDescription && !this._childDescription.deleted ? this._childDescription : null ;
+	},
+	get parent()
+	{
+		if (this._parent && !this._parentDescription)
+			this._parentDescription = new Description(this.allBytes, this._parent);
+		return this._parentDescription && !this._parentDescription.deleted ? this._parentDescription : null ;
+	},
+	get children()
+	{
+		if (!this._children) {
+			let child = this.child;
+			this._children = [];
+			let found = [];
+			while (child)
+			{
+				if (!child.deleted && found.indexOf(child.location) < 0) {
+					this._children.push(child);
+					found.push(child.location);
+				}
+				child = child.next;
+			}
+		}
+		return this._children;
+	},
+	get value()
+	{
+		return this.nodeValue || this.stringValue;
+	},
+	get stringValue()
+	{
+		if (typeof this._stringValue == 'undefined')
+			this._stringValue = bytesToString(this.allBytes.slice(this._valueOffset, this._valueOffset + this._valueLength));
+		return this._stringValue;
+	},
+	get nodeValue()
+	{
+		if (typeof this._nodeValue == 'undefined') {
+			try {
+				this._nodeValue = new Description(this.allBytes, this._valueOffset);
+			}
+			catch(e) {
+				this._nodeValue = null;
+			}
+		}
+		return this._nodeValue;
+	},
+	getNamedChildren : function(aName)
+	{
+		return this.children.filter(function(aChild) {
+				return aChild.name == aName;
+			});
+	},
+	getNamedChild : function(aName)
+	{
+		var found = null;
+		this.children.some(function(aChild) {
+			if (aChild.name == aName)
+				found = aChild;
+			return found;
+		}, this);
+		return found;
+	},
+	get isNode()
+	{
+		return this.type & this.TYPE_NODE;
+	},
+	get deleted()
+	{
+		return this.type & this.TYPE_DELETED;
+	}
+};
+
+
+function bytesToNumber(aBytes)
+{
+	var converted = 0;
+	var offset = 8;
+	aBytes.forEach(function(aValue, aIndex) {
+		converted += (aValue << (aIndex * offset));
+	});
+	return converted;
+}
+
+function bytesToString(aBytes)
+{
+	var converted = '';
+	var offset = 8;
+	aBytes.some(function(aValue, aIndex) {
+		if (!aValue)
+			return true;
+		converted += String.fromCharCode(aValue);
+		return false;
+	});
+	return UTF8toUCS2(converted);
+}
+
+function UTF8toUCS2(aUTF8Octets)
+{
+	return decodeURIComponent(escape(aUTF8Octets));
 }
 
 function readBinaryFrom(aFile) 
@@ -125,9 +210,9 @@ log('readBinaryFrom');
 			.classes['@mozilla.org/binaryinputstream;1']
 			.createInstance(Components.interfaces.nsIBinaryInputStream);
 	binaryStream.setInputStream(fileStream);
-	var array = binaryStream.readByteArray(fileStream.available());
+	var bytes = binaryStream.readByteArray(fileStream.available());
 	binaryStream.close();
 	fileStream.close();
-log('data size: '+array.length+' bytes');
-	return array;
+log('data size: '+bytes.length+' bytes');
+	return bytes;
 }

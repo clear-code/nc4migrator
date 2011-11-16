@@ -6,6 +6,8 @@
 <?xml-stylesheet href="chrome://mozapps/content/preferences/preferences.css"?>
 <?xml-stylesheet href="chrome://browser/skin/preferences/preferences.css"?>
 
+<?xml-stylesheet href="chrome://nc4migrator/content/migration-wizard.css" type="text/css"?>
+
 <!DOCTYPE dialog SYSTEM "chrome://nc4migrator/locale/migration-wizard.dtd">
 
 <wizard xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
@@ -98,7 +100,7 @@
               id="finish-page"
               onpageshow="Wizard.onFinishPageShow();">
     <hbox align="start" flex="1">
-      <description class="wizard-page-message"/>
+      <description class="wizard-page-message flexible"/>
     </hbox>
   </wizardpage>
 

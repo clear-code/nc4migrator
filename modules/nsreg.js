@@ -49,7 +49,7 @@ log('getProfilesFromBinary');
 			};
 		});
 	profiles.sort(function(aA, aB) {
-		return aA > aB;
+		return aA.name > aB.name;
 	});
 log(profiles.length+' profiles found from the registory');
 	return profiles;

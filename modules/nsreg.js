@@ -48,6 +48,9 @@ log('getProfilesFromBinary');
 				path : aUserNode.nodeValue.stringValue
 			};
 		});
+	profiles.sort(function(aA, aB) {
+		return aA > aB;
+	});
 log(profiles.length+' profiles found from the registory');
 	return profiles;
 }
@@ -119,7 +122,6 @@ Description.prototype = {
 				}
 				child = child.next;
 			}
-			this._children.reverse();
 		}
 		return this._children;
 	},

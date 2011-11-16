@@ -119,6 +119,7 @@ Description.prototype = {
 				}
 				child = child.next;
 			}
+			this._children.reverse();
 		}
 		return this._children;
 	},

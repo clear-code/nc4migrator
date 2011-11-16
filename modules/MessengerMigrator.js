@@ -685,7 +685,8 @@ MessengerMigrator.prototype = {
       Services.accountManager.defaultAccount = this.defaultAccount = account;
 
     // Set check for new mail option for default account to TRUE
-    server.loginAtStartUp = false; // XXX: DEBUG
+    if (isDefaultAccount)
+      server.loginAtStartUp = true;
 
     return copiedIdentity;
   },

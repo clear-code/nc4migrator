@@ -153,7 +153,7 @@ MessengerMigrator.prototype = {
   },
 
   hasN4Pref: function (prefName) {
-    return this.prefObject.hasOwnProperty(prefName);
+    return this.prefObject && this.prefObject.hasOwnProperty(prefName);
   },
 
   // Converters

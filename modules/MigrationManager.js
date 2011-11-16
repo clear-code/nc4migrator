@@ -29,7 +29,8 @@ function NcProfile(name, profileDirectory, targetImapServers) {
 
 NcProfile.prototype = {
   get mailAddress() {
-    return this.prefsObject["mail.identity.useremail"] || null;
+    return !this.prefsObject ? null :
+           this.prefsObject["mail.identity.useremail"] || null;
   },
 
   get migrated() {

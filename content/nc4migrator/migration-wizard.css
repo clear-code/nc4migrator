@@ -1,4 +1,7 @@
-.flexible {
-    -moz-box-flex: 1 !important;
+description.wizard-page-message {
+  white-space: pre-wrap;
+}
+description.wizard-page-message.flexible {
+  -moz-box-flex: 1 !important;
 }
 

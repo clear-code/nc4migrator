@@ -87,7 +87,6 @@ function Description(aBytes, aOffset)
 }
 Description.prototype = {
 	DESCRIPTION_SIZE : 32,
-	TYPE_NODE        : 0x01,
 	TYPE_DELETED     : 0x80,
 
 	get next()
@@ -96,11 +95,11 @@ Description.prototype = {
 			this._leftDescription = new Description(this.allBytes, this._left);
 		return this._leftDescription && !this._leftDescription.deleted ? this._leftDescription : null ;
 	},
-	get child()
+	get firstChild()
 	{
-		if (this._down && !this._childDescription)
-			this._childDescription = new Description(this.allBytes, this._down);
-		return this._childDescription && !this._childDescription.deleted ? this._childDescription : null ;
+		if (this._down && !this._firstChildDescription)
+			this._firstChildDescription = new Description(this.allBytes, this._down);
+		return this._firstChildDescription && !this._firstChildDescription.deleted ? this._firstChildDescription : null ;
 	},
 	get parent()
 	{
@@ -111,7 +110,7 @@ Description.prototype = {
 	get children()
 	{
 		if (!this._children) {
-			let child = this.child;
+			let child = this.firstChild;
 			this._children = [];
 			let found = [];
 			while (child)
@@ -163,10 +162,6 @@ Description.prototype = {
 		}, this);
 		return found;
 	},
-	get isNode()
-	{
-		return this.type & this.TYPE_NODE;
-	},
 	get deleted()
 	{
 		return this.type & this.TYPE_DELETED;
@@ -174,12 +169,13 @@ Description.prototype = {
 };
 
 
+const OCTET_SIZE = 8;
+
 function bytesToNumber(aBytes)
 {
 	var converted = 0;
-	var offset = 8;
 	aBytes.forEach(function(aValue, aIndex) {
-		converted += (aValue << (aIndex * offset));
+		converted += (aValue << (aIndex * OCTET_SIZE));
 	});
 	return converted;
 }
@@ -187,7 +183,6 @@ function bytesToNumber(aBytes)
 function bytesToString(aBytes)
 {
 	var converted = '';
-	var offset = 8;
 	aBytes.some(function(aValue, aIndex) {
 		if (!aValue)
 			return true;

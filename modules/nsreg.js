@@ -7,17 +7,8 @@
 
 var EXPORTED_SYMBOLS = ["getProfiles"];
 
-function log(aMessage)
-{
-	Components 
-		.classes['@mozilla.org/observer-service;1']
-		.getService(Components.interfaces.nsIObserverService)
-		.notifyObservers(null, 'log', '[nsreg] '+aMessage);
-}
-
 function getProfiles() 
 {
-log('getProfiles');
 	try {
 		const DirectoryService = Components
 				.classes['@mozilla.org/file/directory_service;1']
@@ -25,21 +16,17 @@ log('getProfiles');
 		let file = DirectoryService.get('WinD', Components.interfaces.nsIFile);
 		file.append('nsreg.dat');
 		if (file.exists()) {
-log('nsreg.dat exists');
 			let bytes = readBinaryFrom(file);
 			return getProfilesFromBinary(bytes);
 		}
 	}
 	catch(e) {
-log(e);
 	}
-log('no profile is found');
 	return [];
 }
 
 function getProfilesFromBinary(aBytes) 
 {
-log('getProfilesFromBinary');
 	var root = getRootDescription(aBytes);
 	var users = root.getNamedChild('Users').children;
 	var profiles = users.map(function(aUserNode) {
@@ -51,7 +38,6 @@ log('getProfilesFromBinary');
 	profiles.sort(function(aA, aB) {
 		return aA.name > aB.name;
 	});
-log(profiles.length+' profiles found from the registory');
 	return profiles;
 }
 
@@ -199,7 +185,6 @@ function UTF8toUCS2(aUTF8Octets)
 
 function readBinaryFrom(aFile) 
 {
-log('readBinaryFrom');
 	var fileStream = Components
 			.classes['@mozilla.org/network/file-input-stream;1']
 			.createInstance(Components.interfaces.nsIFileInputStream);
@@ -211,6 +196,5 @@ log('readBinaryFrom');
 	var bytes = binaryStream.readByteArray(fileStream.available());
 	binaryStream.close();
 	fileStream.close();
-log('data size: '+bytes.length+' bytes');
 	return bytes;
 }

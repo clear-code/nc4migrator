@@ -98,13 +98,14 @@ Description.prototype = {
 		if (!this._children) {
 			let child = this.firstChild;
 			this._children = [];
-			let found = [];
+			let found = {};
 			while (child)
 			{
-				if (!child.deleted && found.indexOf(child.location) < 0) {
-					this._children.push(child);
-					found.push(child.location);
-				}
+				if (child.deleted || child.location in found)
+					continue;
+
+				this._children.push(child);
+				found[child.location] = child;
 				child = child.next;
 			}
 		}

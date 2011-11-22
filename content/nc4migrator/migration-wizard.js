@@ -227,24 +227,39 @@
     updateProfileList: function () {
       Util.DEBUG = true;
 
+      var selectedIndex = -1;
       this.ncProfiles.forEach(function (ncProfile, i) {
         var name = ncProfile.name;
-        var prettyName = name + " <" + ncProfile.mailAddress + ">";
-        var originalPrettyName = prettyName;
-
+        var prettyName = name,
+            originalPrettyName = name;
         var migrated = ncProfile.migrated;
-        if (migrated)
-          prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
 
+        var mail = ncProfile.mailAddress;
+        if (mail) {
+          prettyName = name + " <" + mail + ">";
+          originalPrettyName = prettyName;
+          if (migrated)
+            prettyName = StringBundle.nc4migrator.formatStringFromName("migratedProfileName", [prettyName], 1);
+
+          if (selectedIndex < 0)
+            selectedIndex = i;
+        }
+        else {
+          prettyName = StringBundle.nc4migrator.formatStringFromName("invalidProfileName", [prettyName], 1);
+        }
         var item = elements.migrationProfileList.appendItem(
           prettyName, name
         );
+
         item.setAttribute("name", originalPrettyName);
         if (migrated)
           item.setAttribute("migrated", true);
+        if (!mail)
+          item.setAttribute("disabled", true);
       });
 
-      elements.migrationProfileList.selectedIndex = 0;
+      if (selectedIndex >= 0)
+        elements.migrationProfileList.selectedIndex = selectedIndex;
     },
 
     getSelectedProfile: function () {

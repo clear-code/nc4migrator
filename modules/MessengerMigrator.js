@@ -255,7 +255,14 @@ MessengerMigrator.prototype = {
         let smtpServer = null;
 
         try {
-          smtpServer = Services.smtpService.findServer(username, hostname);
+          // findServer() sometimes fails...
+          // smtpServer = Services.smtpService.findServer(username, hostname);
+          Util.toArray(Services.smtpService.smtpServers, Ci.nsISmtpServer).some(function (aServer) {
+            if (aServer.hostname == hostname &&
+                aServer.username == username)
+              smtpServer = aServer;
+            return smtpServer;
+          });
         } catch (x) {
           Util.log(x);
         }

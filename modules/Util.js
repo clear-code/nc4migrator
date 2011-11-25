@@ -102,6 +102,7 @@ var Util = {
   },
 
   copyFileAsync: function (fromFile, toFile, callback) {
+    Util.log("copyFileAsync from "+fromFile.path+"\n to "+toFile.path);
     let ostream = Cc["@mozilla.org/network/file-output-stream;1"].
       createInstance(Ci.nsIFileOutputStream);
     ostream.init(toFile, -1, -1, 0);
@@ -111,18 +112,40 @@ var Util = {
     istream.init(fromFile, -1, -1, 0);
 
     NetUtil.asyncCopy(istream, ostream, function (resCode) {
+      Util.log("asyncCopy finished "+fromFile.path+"\n"+resCode);
       try {
         ostream.close();
-      } catch ([]) {}
+      } catch (x) {
+        Util.log("failed to close output stream "+x);
+      }
       try {
         istream.close();
-      } catch ([]) {}
+      } catch (x) {
+        Util.log("failed to close input stream "+x);
+      }
       if (typeof callback === "function")
         callback(Components.isSuccessCode(resCode));
     });
   },
 
-  deferredCopyFile: function (fromFile, toFile) {
+  deferredCopyFile: function (fromFile, toFile, fileHandler) {
+    if (typeof fileHandler === "function") {
+      try {
+        let transformed = fileHandler(fromFile, toFile);
+        if (transformed && transformed != toFile)
+          toFile = transformed;
+      } catch (x) {
+        if (x instanceof this.SkipFile) {
+          Util.log("skipped: "+fromFile.path);
+          return Deferred.next(function() {
+              return true;
+            });
+        } else {
+          Util.log("deferredCopyFile: " + x);
+        }
+      }
+    }
+
     var deferred = new Deferred();
     Util.copyFileAsync(fromFile, toFile, function (succeeded) {
       deferred.call(succeeded);
@@ -130,7 +153,7 @@ var Util = {
     return deferred;
   },
 
-  deferredCopyDirectory: function (fromDir, toDir, fileTransformer, onProgress) {
+  deferredCopyDirectory: function (fromDir, toDir, fileHandler, onProgress) {
     return Deferred.next(function () {
       var deferreds = [];
       var entries = fromDir.directoryEntries;
@@ -143,13 +166,20 @@ var Util = {
         }
       }
 
-      if (typeof fileTransformer === "function") {
+      if (typeof fileHandler === "function") {
         try {
-          let transformed = fileTransformer(toDir, fromDir);
+          let transformed = fileHandler(fromDir, toDir);
           if (transformed && transformed != toDir)
             toDir = transformed;
         } catch (x) {
-          Util.log("deferredCopyDirectory: " + x);
+          if (x instanceof this.SkipFile) {
+            Util.log("skipped: "+fromDir.path);
+            return Deferred.next(function() {
+              return true;
+            });
+          } else {
+            Util.log("deferredCopyDirectory: " + x);
+          }
         }
       }
 
@@ -160,13 +190,15 @@ var Util = {
         let nextFromFile = entries.getNext().QueryInterface(Ci.nsIFile);
         let nextToFile   = let (cloned = toDir.clone()) (cloned.append(nextFromFile.leafName), cloned);
         if (nextFromFile.isDirectory())
-          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile, fileTransformer));
+          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile, fileHandler));
         else
-          deferreds.push(Util.deferredCopyFile(nextFromFile, nextToFile));
+          deferreds.push(Util.deferredCopyFile(nextFromFile, nextToFile, fileHandler));
       }
 
       if (!deferreds.length)
-        return true;
+        return Deferred.next(function() {
+          return true;
+        });
 
       var deferred = new Deferred();
       // Call Util.deferredCopyDirectory() and Util.deferredCopyFile() asynchronously
@@ -180,6 +212,8 @@ var Util = {
 
       return deferred;
     });
+  },
+  SkipFile : function() {
   },
 
   readJSON: function (aTarget) {

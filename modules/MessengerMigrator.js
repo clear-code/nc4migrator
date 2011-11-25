@@ -840,31 +840,36 @@ MessengerMigrator.prototype = {
       deferred = LocalFolderMigrator.migrateTo(
         oldMailDir,             // Mail
         accountLocalFolder,
-        function sbdCreator(file, fromFile) {
-          if (!fromFile.isDirectory())
-            return file;
+        function localMailHandler(fromFile, toFile) {
+          if (!fromFile.isDirectory()) {
+            // *.snm can be locked and migration can be unexpectedly stalled.
+            if (LocalFolderMigrator.shouldIgnoreFile(fromFile))
+              throw new Util.SkipFile();
 
-          if (/\.sbd$/i.test(file.leafName)) {
-            let folderFile = file.parent.clone();
-            folderFile.append(file.leafName.replace(/\.sbd$/i, ""));
+            return toFile;
+          }
+
+          if (/\.sbd$/i.test(toFile.leafName)) {
+            let folderFile = toFile.parent.clone();
+            folderFile.append(toFile.leafName.replace(/\.sbd$/i, ""));
             if (folderFile.exists())
-              return file;
+              return toFile;
           }
 
           // create new folder file for the container directory
-          if (file.exists())
-            file.remove(true);
-          file.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
+          if (toFile.exists())
+            toFile.remove(true);
+          toFile.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
 
           // Thunderbird requires the suffix ".sbd" for the container directory of sub directories
-          let subDir = file.parent.clone();
-          subDir.append(file.leafName + ".sbd");
-          Util.log("%s renamed to %s", file.path, subDir.path);
-          file = subDir;
-          if (file.exists())
-            file.remove(true);
+          let subDir = toFile.parent.clone();
+          subDir.append(toFile.leafName + ".sbd");
+          Util.log("%s renamed to %s", toFile.path, subDir.path);
+          toFile = subDir;
+          if (toFile.exists())
+            toFile.remove(true);
 
-          return file;
+          return toFile;
         },
         onProgress
       );
@@ -1038,7 +1043,7 @@ var LocalFolderMigrator = {
     });
   },
 
-  migrateTo: function (source, dest, directoryNameTransformer, onProgress) {
+  migrateTo: function (source, dest, fileHandler, onProgress) {
     var sourceDir = Util.getFile(source);
     var destDir   = Util.getFile(dest);
 
@@ -1053,7 +1058,7 @@ var LocalFolderMigrator = {
 
     var that = this;
     return Util.deferredCopyDirectory(
-      sourceDir, destDir, directoryNameTransformer, onProgress
+      sourceDir, destDir, fileHandler, onProgress
     ).next(function () {
       let actualDestDir = destDir.parent.clone();
       actualDestDir.append(destDir.leafName + ".sbd");

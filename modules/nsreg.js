@@ -70,12 +70,12 @@ function Description(aBytes, aOffset) {
   if (this.location != aOffset)
     throw new Error('invalid description at '+aOffset);
 
-  this.type = bytesToNumber(this.bytes.slice(10, 11));
-
   var nameOffset = bytesToNumber(this.bytes.slice(4, 7));
   var nameLength = bytesToNumber(this.bytes.slice(8, 9));
   this.name = bytesToString(this.allBytes.slice(nameOffset,
                                                 nameOffset + nameLength));
+
+  this.type = bytesToNumber(this.bytes.slice(10, 11));
 
   this._left   = bytesToNumber(this.bytes.slice(12, 15));
   this._down   = bytesToNumber(this.bytes.slice(16, 19));

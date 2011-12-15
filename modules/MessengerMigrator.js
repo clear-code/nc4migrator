@@ -991,13 +991,25 @@ var IncomingServerTools = {
       ((serverPort == defaultSecureServerPort) && isSecure);
 
     // Construct pretty name from username and hostname
-    var constructedPrettyName = userName;
-    if (userName.indexOf("@") < 0)
-      constructedPrettyName += "@" + hostName;
+    var constructedPrettyName = Prefs.get("extensions.nc4migrator.prettyNameFormat", "%username%@%hostname%%port%");
+    if (constructedPrettyName) {
+      let port = "";
+      if ((serverPort > 0) && (!isItDefaultPort))
+        port = ":" + serverPort;
 
-    // If the port is valid and not default, add port value to the pretty name
-    if ((serverPort > 0) && (!isItDefaultPort) && Prefs.get("extensions.nc4migrator.prettyNameWithNotDefaultPortNumber", true))
-      constructedPrettyName = constructedPrettyName + ":" + serverPort;
+      constructedPrettyName = constructedPrettyName
+                                .replace(/%username%/gi, userName)
+                                .replace(/%hostname%/gi, hostName)
+                                .replace(/%port%/gi, ":" + serverPort);
+    } else {
+      constructedPrettyName = userName;
+      if (userName.indexOf("@") < 0)
+        constructedPrettyName += "@" + hostName;
+
+      // If the port is valid and not default, add port value to the pretty name
+      if ((serverPort > 0) && (!isItDefaultPort))
+        constructedPrettyName = constructedPrettyName + ":" + serverPort;
+    }
 
     // Format the pretty name
     return this.getFormattedStringFromID(

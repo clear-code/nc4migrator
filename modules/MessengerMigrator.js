@@ -991,7 +991,7 @@ var IncomingServerTools = {
       ((serverPort == defaultSecureServerPort) && isSecure);
 
     // Construct pretty name from username and hostname
-    var constructedPrettyName = Prefs.get("extensions.nc4migrator.prettyNameFormat", "%username%@%hostname%%port%");
+    var constructedPrettyName = Prefs.get("extensions.nc4migrator.prettyNameFormat", "");
     if (constructedPrettyName) {
       let port = "";
       if ((serverPort > 0) && (!isItDefaultPort))

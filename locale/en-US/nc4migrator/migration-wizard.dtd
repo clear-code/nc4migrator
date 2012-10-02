@@ -1,0 +1,9 @@
+<!ENTITY wizard.title "Netscape Messenger Migration Wizard">
+
+<!-- Basic Words -->
+
+<!ENTITY wizard.profile "Profile">
+<!ENTITY wizard.account "E-Mail address">
+<!ENTITY wizard.quotaAndEstimatedTime "Mail capacity and estimated migration time">
+<!ENTITY wizard.quota "Mail capacity">
+<!ENTITY wizard.estimatedTime "Estimated migration time">

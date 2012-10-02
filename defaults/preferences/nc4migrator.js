@@ -44,7 +44,8 @@ pref("extensions.nc4migrator.wizard.restart.stay", "chrome://nc4migrator/locale/
 // pref("extensions.nc4migrator.override.*", *);
 // pref("extensions.nc4migrator.protectedServerPrefs.none", "directory,directory-rel,hostname,name,spamActionTargetAccount,type");
 
-// pref("extensions.nc4migrator.defaultImapServers", "imap.googlemail.com,imap.googlemail2.com,imap.googlemail3.com");
+pref("extensions.nc4migrator.limitImapServersToMigrate", false);
+// pref("extensions.nc4migrator.imapServersToMigrate", "imap.googlemail.com,imap.googlemail2.com,imap.googlemail3.com");
 // pref("extensions.nc4migrator.requiredDiskSpace", "10737418240");
 // pref("extensions.nc4migrator.quotaCalculation.maxSize", "1000000000");
 // pref("extensions.nc4migrator.quotaCalculation.timeout", 60000);

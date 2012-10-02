@@ -24,11 +24,10 @@ const Messages = {
   }
 };
 
-function NcProfile(name, profileDirectory, targetImapServers) {
+function NcProfile(name, profileDirectory) {
   this.name = name;
   this.profileDirectory = profileDirectory;
   this.prefsObject = this.getPrefsObject();
-  this.targetImapServers = targetImapServers;
 }
 
 NcProfile.prototype = {
@@ -38,15 +37,24 @@ NcProfile.prototype = {
   },
 
   get migrated() {
-    // XXX: huge overhead
-    let that = this;
-    let migrator = new MessengerMigrator(this.prefsObject, {
+    return this.getMigrator().alreadyMigrated;
+  },
+
+  getMigrator: function () {
+    var imapServersFilter = null;
+    if (Prefs.get("extensions.nc4migrator.limitImapServersToMigrate")) {
+      imapServersFilter = function (servers) {
+        var imapServersToMigrate = (
+          Prefs.get("extensions.nc4migrator.imapServersToMigrate") || ""
+        ).split(",");
+        return servers.filter(function (server) imapServersToMigrate.indexOf(server) >= 0);
+      };
+    }
+
+    return new MessengerMigrator(this.prefsObject, {
       profileDirectory: this.profileDirectory,
-      imapServersFilter: function (servers) {
-        return servers.filter(function (server) that.targetImapServers.indexOf(server) >= 0);
-      }
+      imapServersFilter: imapServersFilter
     });
-    return migrator.alreadyMigrated;
   },
 
   getPrefsObject: function () {
@@ -93,16 +101,13 @@ var MigrationManager = {
     var profiles = Nsreg.getProfiles();
     return profiles.map(function (profile) {
       try {
-        return new NcProfile(profile.name, Util.getFile(profile.path), that.defaultImapServers);
+        return new NcProfile(profile.name, Util.getFile(profile.path));
       } catch (x) {
         Util.log("ncProfiles: " + x);
         return null;
       }
     }).filter(function (ncProfile) ncProfile);
   },
-
-  // this preference value limits target imap servers which will be migrated
-  get defaultImapServers() (Prefs.get('extensions.nc4migrator.defaultImapServers') || "").split(","),
 
   beginMigration: function () {
     let that = this;
@@ -139,16 +144,7 @@ var MigrationManager = {
         !ncProfile.prefsObject)
       throw new Error("Invalid profile given. Cannot proceed migration.");
 
-    let defaultImapServers = this.defaultImapServers;
-
-    var migrator = new MessengerMigrator(ncProfile.prefsObject, {
-      profileDirectory: ncProfile.profileDirectory,
-      imapServersFilter: function (servers) {
-        return servers.filter(function (server) defaultImapServers.indexOf(server) >= 0);
-      }
-    });
-
-    return migrator;
+    return ncProfile.getMigrator();
   },
 
   migratePrefsFrom: function (ncProfile) {

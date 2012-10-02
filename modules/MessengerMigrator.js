@@ -482,14 +482,15 @@ MessengerMigrator.prototype = {
   },
   // Some prefs for local folder account should not be overridden.
   canOverridePref: function (aKey) {
-    if (aKey.indexOf('mail.server.') != 0) return true;
-
-    var base = aKey.split('.').slice(0, 3).join('.');
-    var leaf = aKey.split('.').slice(3);
-    var type = Prefs.get(base + '.type');
-    var protectedPrefs = Prefs.get('extensions.nc4migrator.protectedServerPrefs.' + type,
-                                   type == 'none' ? 'directory,directory-rel,hostname,name,spamActionTargetAccount,type' : '' );
-    return protectedPrefs.split(',').indexOf(leaf) < 0;
+    if (aKey.indexOf('mail.server.') == 0) {
+      let base = aKey.split('.').slice(0, 3).join('.');
+      let leaf = aKey.split('.').slice(3);
+      let type = Prefs.get(base + '.type');
+      let protectedPrefs = Prefs.get('extensions.nc4migrator.protectedServerPrefs.' + type,
+                                     type == 'none' ? 'directory,directory-rel,hostname,name,spamActionTargetAccount,type' : '' );
+      return protectedPrefs.split(',').indexOf(leaf) < 0;
+    }
+    return true;
   },
 
   resetState: function () {

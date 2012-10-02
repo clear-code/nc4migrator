@@ -1,0 +1,33 @@
+nc4migrator のドキュメント
+
+h1. nc4migrator (日本語)
+
+かつて Thunderbird には Netscape Messenger のアカウントインポート機能が備わっていましたが、この機能は Thunderbird 3 で削除されてしまいました。本アドオンはその機能を再実装することにより、Thunderbird 3 以降における Netscape Messenger のアカウントインポートを可能とします。
+
+h2. 移行ウィザード
+
+以下に示す２つの方法で、移行ウィザードを開始することができます。
+
+* 何もアカウントが存在しない状態で Thunderbird を起動する。
+* 「ツール」メニューの「Netscape 4 移行ウィザード」を選択する。
+
+ウィザードが開始されれば、あとは指示に従うだけで Netscape のアカウントをインポートすることができます。
+
+h2. 設定値の上書き機能
+
+@extensions.nc4migrator.override.<上書きしたい設定名>@ という設定を作成しておくと、設定の移行時にその値で上書きします。例えば @pref("extensions.nc4migrator.override.mail.server.*.empty_trash_on_exit", true);@ としておくと、移行前の設定がどうであったかに関わらず、すべての受信サーバでごみ箱を自動的に空にするようになります。また、値を文字列で @[[CLEAR]]@ としておくことで、その設定値を移行せずに空にしておくことができます。
+
+h1. nc4migrator (English)
+
+This add-on allows users to import accounts from Netscape messenger, which function is once implemented in Thunderbird but has been removed from Thunderbird 3.
+
+h2. Migration wizard
+
+Migration wizard starts in the following two ways.
+
+* Launching Thunderbird with no accounts.
+* Selecting "Tool" -> "Netscape 4 migration wizard".
+
+h2. Overriding setting values
+
+If a setting @extensions.nc4migrator.override.<setting_name_to_be_overridden>@ exists, this add-on overrides the value of @<setting_name_to_be_overridden>@ with that setting value. For instance, by arranging a setting @pref("extensions.nc4migrator.override.mail.server.*.empty_trash_on_exit", true);@, this add-on overrides the value of @<mail.server.*.empty_trash_on_exit>@ with @true@, and as a consequence, Thunderbird automatically clears trashes. Special setting value @[[CLEAR]]@ let this add-on to ignore the corresponding setting by leaving its value empty.

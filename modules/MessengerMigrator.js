@@ -440,7 +440,12 @@ MessengerMigrator.prototype = {
     var prefix = 'extensions.nc4migrator.override.';
     var initial = this.initialPrefs;
     var before = this.beforePrefs;
+    var keys = [];
     PrefService.getChildList(prefix, {}).forEach(function(aPref) {
+      keys.push(aPref);
+    });
+    keys.sort(); // process "*" (wildcard) prefs before specific prefs
+    keys.forEach(function(aPref) {
       var key = aPref.replace(prefix, '');
       var value = Prefs.get(aPref);
       var shouldClear = (value == '[[CLEAR]]');

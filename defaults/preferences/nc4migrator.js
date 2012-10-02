@@ -38,6 +38,7 @@ pref("extensions.nc4migrator.wizard.restart.stay", "chrome://nc4migrator/locale/
 // pref("extensions.nc4migrator.addressbook.importAsHomeAddress", false);
 // pref("extensions.nc4migrator.shareOldMailbox", true);
 // pref("extensions.nc4migrator.override.*", *);
+// pref("extensions.nc4migrator.protectedServerPrefs.none", "directory,directory-rel,hostname,name,spamActionTargetAccount,type");
 
 // pref("extensions.nc4migrator.defaultImapServers", "imap.googlemail.com,imap.googlemail2.com,imap.googlemail3.com");
 // pref("extensions.nc4migrator.requiredDiskSpace", "10737418240");

@@ -441,6 +441,7 @@ MessengerMigrator.prototype = {
     var initial = this.initialPrefs;
     var before = this.beforePrefs;
     var keys = [];
+    var self = this;
     PrefService.getChildList(prefix, {}).forEach(function(aPref) {
       keys.push(aPref);
     });
@@ -454,6 +455,7 @@ MessengerMigrator.prototype = {
         let regexp = new RegExp('^'+key.replace(/\./g, '\\.').replace(/\*/g, '.+')+'$', '');
         PrefService.getChildList(key.split('*')[0], {}).forEach(function(aPref) {
           if ((aPref in before && aPref in initial) || !regexp.test(aPref)) return;
+          if (!self.canOverridePref(aPref)) return;
           if (shouldClear) {
             Util.log('clear '+aPref);
             Prefs.reset(aPref);
@@ -477,6 +479,17 @@ MessengerMigrator.prototype = {
       }
     }, this);
     Util.log('override:complete');
+  },
+  // Some prefs for local folder account should not be overridden.
+  canOverridePref: function (aKey) {
+    if (aKey.indexOf('mail.server.') != 0) return true;
+
+    var base = aKey.split('.').slice(0, 3).join('.');
+    var leaf = aKey.split('.').slice(3);
+    var type = Prefs.get(base + '.type');
+    var protectedPrefs = Prefs.get('extensions.nc4migrator.protectedServerPrefs.' + type,
+                                   type == 'none' ? 'directory,directory-rel,hostname,name,spamActionTargetAccount,type' : '' );
+    return protectedPrefs.split(',').indexOf(leaf) < 0;
   },
 
   resetState: function () {

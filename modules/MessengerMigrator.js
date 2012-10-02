@@ -484,7 +484,7 @@ MessengerMigrator.prototype = {
   canOverridePref: function (aKey) {
     if (aKey.indexOf('mail.server.') == 0) {
       let base = aKey.split('.').slice(0, 3).join('.');
-      let leaf = aKey.split('.').slice(3);
+      let leaf = aKey.split('.').slice(3).join('.');
       let type = Prefs.get(base + '.type');
       let protectedPrefs = Prefs.get('extensions.nc4migrator.protectedServerPrefs.' + type,
                                      type == 'none' ? 'directory,directory-rel,hostname,name,spamActionTargetAccount,type' : '' );

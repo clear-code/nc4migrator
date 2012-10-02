@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 content	nc4migrator	content/nc4migrator/
+locale	nc4migrator	en-US	locale/en-US/nc4migrator/
 locale	nc4migrator	ja	locale/ja/nc4migrator/
 
 overlay	chrome://messenger/content/messenger.xul	chrome://nc4migrator/content/messenger.xul

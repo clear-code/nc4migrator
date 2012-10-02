@@ -2,7 +2,7 @@ nc4migrator のドキュメント
 
 h1. nc4migrator (日本語)
 
-かつて Thunderbird には Netscape Messenger のアカウントインポート機能が備わっていましたが、この機能は Thunderbird 3 で削除されてしまいました。本アドオンはその機能を再実装することにより、Thunderbird 3 以降における Netscape Messenger のアカウントインポートを可能とします。
+このアドオンは、Netscape Messenger 4.xのメールアカウント設定をThunderbirdのメールアカウントとしてインポートする機能を提供します。複数のNetscape Communicator 4.xプロファイルがある場合は、個々のNC4.xプロファイルを個々のThunderbirdメールアカウントとしてインポートします。
 
 h2. 移行ウィザード
 
@@ -17,9 +17,72 @@ h2. 設定値の上書き機能
 
 @extensions.nc4migrator.override.<上書きしたい設定名>@ という設定を作成しておくと、設定の移行時にその値で上書きします。例えば @pref("extensions.nc4migrator.override.mail.server.*.empty_trash_on_exit", true);@ としておくと、移行前の設定がどうであったかに関わらず、すべての受信サーバでごみ箱を自動的に空にするようになります。また、値を文字列で @[[CLEAR]]@ としておくことで、その設定値を移行せずに空にしておくことができます。
 
+h2. 制限事項
+
+* 現在のバージョンは、IMAPアカウントのインポートにのみ対応しています。POP3アカウントのインポートについては未対応です。
+* 現在のバージョンは、以下の設定項目のインポートにのみ対応しています。
+** 個人情報
+*** 名前
+*** 電子メールアドレス
+*** 返信アドレス
+*** 組織
+*** 署名ファイル
+** メールサーバ
+*** 受信メールサーバ（IMAPサーバのみ移行されます）
+**** ホスト名
+**** サーバの種類（IMAP）
+**** ユーザ名
+**** 新しいフォルダをオフライン ダウンロードに設定する
+**** 保護付きの接続（SSL）を使用する
+**** メッセージを削除するとき
+**** 終了時に受信フォルダをクリーンアップする
+**** 終了時にごみ箱フォルダを空にする
+**** IMAPサーバ ディレクトリ
+**** 購読中のフォルダのみを表示
+**** サーバはサブフォルダとメッセージの両方を格納できるフォルダをサポート
+**** 個人用ネームスペース
+**** 公共（共用）
+**** 他のユーザ
+**** これらのネームスペースをサーバ側で上書きすることを許可する
+*** 送信メール サーバー
+**** 送信メール（SMTP）サーバ
+**** 送信メール サーバのユーザ名
+**** SSL・TLS
+** コピーとフォルダ
+** 書式
+* 現在のバージョンは、以下の設定項目のインポートに対応していません。以下の設定項目はThunderbirdのメールアカウントの初期設定値になります。
+** ローカルアドレス帳の内容
+** メールとグループ
+*** ">" で始まるテキストの引用文の表示方法
+*** テキストのみのメッセージや記事の表示方法
+*** メッセージ到着時に音で知らせる
+*** 最後に選択したメッセージを記憶しておく
+*** フォルダをごみ箱に移動する際に、確認する
+*** MAPIアプリケーションでNetscape Messangerを使用する
+** 個人情報
+*** メッセージにパーソナル カードを添付する（vCard）
+*** 「カードを編集」ダイアログのすべての設定
+** メールサーバ
+*** 受信メールサーバ
+**** 新着メールをN分ごとに確認する
+**** 「終了時にすべてのフォルダをクリーンアップする」の設定（当該機能がThunderbirdに存在しないため）
+**** パスワードを保存する
+**** ローカルメールディレクトリ：Thunderbirdプロファイル内のディレクトリとなる
+** グループ サーバ（すべての設定）
+** アドレス（すべての設定）
+** メッセージ（すべての設定）
+** Windowの設定（すべての設定）
+** コピーとフォルダ
+*** ニュースグループ メッセージを送信するとき
+** 書式
+*** HTMLメッセージを受信可能な一覧に入っていない受取人に、HTMLメッセージを送信する時
+** 受信確認（すべての設定）
+** ディスク スペース（すべての設定）
+
+
 h1. nc4migrator (English)
 
-This add-on allows users to import accounts from Netscape messenger, which function is once implemented in Thunderbird but has been removed from Thunderbird 3.
+This add-on provides ability to import E-mail accounts from Netscape Messenger 4.x to Thunderbird. If there are multiple Netscape Communicator 4.x profiles, then this imports each NC4.x profile as a Thunderbird mail account.
 
 h2. Migration wizard
 
@@ -31,3 +94,65 @@ Migration wizard starts in the following two ways.
 h2. Overriding setting values
 
 If a setting @extensions.nc4migrator.override.<setting_name_to_be_overridden>@ exists, this add-on overrides the value of @<setting_name_to_be_overridden>@ with that setting value. For instance, by arranging a setting @pref("extensions.nc4migrator.override.mail.server.*.empty_trash_on_exit", true);@, this add-on overrides the value of @<mail.server.*.empty_trash_on_exit>@ with @true@, and as a consequence, Thunderbird automatically clears trashes. Special setting value @[[CLEAR]]@ let this add-on to ignore the corresponding setting by leaving its value empty.
+
+h2. Restrictions
+
+* Currently only IMAP mail accounts can be imported. POP3 accounts are not supported.
+* Currently only following options can be imported.
+** Identity
+*** Your name
+*** Email address
+*** Reply-to address
+*** Organization
+*** Signature File
+** Mail Servers
+*** Incoming Mail Servers (only IMAP servers are imported)
+**** Server Name
+**** Server Type (IMAP only)
+**** User Name
+**** Mark new folders for offline download
+**** Use secure connection (SSL)
+**** When I delete a message
+**** Clean up ("Expunge") Inbox on Quit
+**** Empty Trash on Quit
+**** IMAP server directory
+**** Show only subscribed folders
+**** Server supports folders that contain sub-folders and messages
+**** Personal namespace
+**** Public (shared)
+**** Other Users
+**** Allow server to override these namespaces
+*** Outgoing Mail Server
+**** Outgoint mail (SMTP) server
+**** Outgoing mail server user name
+**** Use Secure Socket Layer (SSL) or TLS for outgoing messages
+** Copies and Folders
+** Formatting
+* Currently following options are ignored and configured with Thunderbird's default value.
+** Contents of local address books
+** Mail & Newsgroups
+*** Plain quoted text beginning with ">" is displayed with
+*** Display plaintext messages and articles with
+*** Play sound when messages arrive
+*** Remember the last selected message
+*** Confirm when moving folders to the trash
+*** Use Netscape Messenger from MAPI-based applications
+** Identity
+*** Attach my personal card to messages (as a vCard)
+*** Anything in the "Edit Card" dialog
+** Mail Servers
+*** Incoming Mail Servers
+**** Check for mail every N minutes
+**** Clean up all folders on exit (Thunderbird doesn't inlucde this feature)
+**** Rmember password
+**** Local mail directory: migrated to a new folder in the Thunderbird profile.
+** Newsgroup Servers (anything)
+** Addressing (anything)
+** Messages (anything)
+** Window Settings (anything)
+** Copies and Folders
+*** When sending a newsgroup message, automatically
+** Formatting
+*** When sending HTML mail messages to recipients who are not listed as being able to receive them
+** Return Receipts (anything)
+** Disk Space (anything)

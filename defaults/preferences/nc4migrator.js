@@ -48,3 +48,4 @@ pref("extensions.nc4migrator.wizard.restart.stay", "chrome://nc4migrator/locale/
 // pref("extensions.nc4migrator.fallbackToDefaultStartup", true);
 // pref("extensions.nc4migrator.cancellable", true);
 // pref("extensions.nc4migrator.forceRestart", false);
+// pref("extensions.nc4migrator.stringPrefsEncoding", "Shift_JIS");

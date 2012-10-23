@@ -6,6 +6,7 @@ const Cu = Components.utils;
 
 const Nsreg = Cu.import("resource://nc4migrator-modules/nsreg.js", {});
 const Prefread = Cu.import("resource://nc4migrator-modules/prefread.js", {});
+const { encoding } = Cu.import("resource://nc4migrator-modules/encoding.jsm", {});
 
 const { Util } = Cu.import('resource://nc4migrator-modules/Util.js', {});
 const { MessengerMigrator } = Cu.import('resource://nc4migrator-modules/MessengerMigrator.js', {});
@@ -48,14 +49,18 @@ NcProfile.prototype = {
 
   getPrefsObject: function () {
     var prefsFile = Util.getFile(this.profileDirectory);
-    prefsFile.append('prefs.js');
+    prefsFile.append("prefs.js");
 
     if (!prefsFile.exists())
       return null;
 
     var prefsObject = {};
+    var stringPrefsEncoding = Prefs.get("extensions.nc4migrator.stringPrefsEncoding", null);
     Prefread.prefread(prefsFile).forEach(function(aItem) {
-      prefsObject[aItem.name] = aItem.value;
+      var value = aItem.value;
+      if (typeof value == "string" && stringPrefsEncoding)
+        value = encoding.XToUnicode(value, stringPrefsEncoding);
+      prefsObject[aItem.name] = value;
     });
 
     return prefsObject;

@@ -53,3 +53,4 @@ pref("extensions.nc4migrator.limitImapServersToMigrate", false);
 // pref("extensions.nc4migrator.fallbackToDefaultStartup", true);
 // pref("extensions.nc4migrator.cancellable", true);
 // pref("extensions.nc4migrator.forceRestart", false);
+// pref("extensions.nc4migrator.stringPrefsEncoding", "Shift_JIS");

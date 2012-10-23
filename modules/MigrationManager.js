@@ -5,6 +5,7 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 
 const Nsreg = Cu.import("resource://nc4migrator-modules/nsreg.js", {});
+const Prefread = Cu.import("resource://nc4migrator-modules/prefread.js", {});
 
 const { Util } = Cu.import('resource://nc4migrator-modules/Util.js', {});
 const { MessengerMigrator } = Cu.import('resource://nc4migrator-modules/MessengerMigrator.js', {});
@@ -53,28 +54,9 @@ NcProfile.prototype = {
       return null;
 
     var prefsObject = {};
-
-    var setPref = function(aKey, aValue) {
-      if (typeof aValue == 'number' && isNaN(aValue)) return;
-      prefsObject[aKey] = aValue;
-    };
-
-    var sandbox = {
-      user_pref : setPref,
-      pref : setPref,
-      defaultPref : setPref,
-      lockPref : setPref,
-      get PrefConfig() {
-        return this;
-      },
-      get SecurityConfig() {
-        return this;
-      },
-      config : function() {}
-    };
-
-    var contents = Util.readFile(prefsFile, { charset: 'Shift_JIS' });
-    Util.evalInContext(contents, sandbox);
+    Prefread.prefread(prefsFile).forEach(function(aItem) {
+      prefsObject[aItem.name] = aItem.value;
+    });
 
     return prefsObject;
   }

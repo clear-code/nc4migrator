@@ -10,7 +10,7 @@
  *    * http://mxr.mozilla.org/seamonkey/source/modules/libreg/src/reg.c
  */
 
-const EXPORTED_SYMBOLS = ["getProfiles"];
+var EXPORTED_SYMBOLS = ["getProfiles"];
 
 const Cc = Components.classes;
 const Ci = Components.interfaces;

@@ -40,11 +40,13 @@ var EXPORTED_SYMBOLS = ["MessengerMigrator"];
 
 const { classes: Cc, interfaces: Ci, utils: Cu, results: Cr } = Components;
 
+Cu.import('resource://gre/modules/Timer.jsm');
+Cu.import('resource://gre/modules/Promise.jsm');
+
 const { Util } = Cu.import("resource://nc4migrator-modules/Util.js", {});
 const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
 const { Services } = Cu.import("resource://nc4migrator-modules/Services.js", {});
 const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
-const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
 const Prefs = new Preferences("");
 
@@ -227,27 +229,28 @@ MessengerMigrator.prototype = {
 
     this.initialPrefs = this.beforePrefs = this.backupAllPrefs();
 
-    return Deferred.next((totalSteps++, function checkImapServers() {
-      if (!that.migrationTargetImapServers.length)
-        throw StringBundle.nc4migrator.GetStringFromName("migrationError_noTargetedImapServersFound");
-    }))
-      .next((totalSteps++, function preProcess() {
-        return Util.deferredTraverseDirectory(this.n4MailDirectory, function (file) {
+    return Promise.resolve()
+      .then((totalSteps++, function checkImapServers() {
+        if (!that.migrationTargetImapServers.length)
+          throw StringBundle.nc4migrator.GetStringFromName("migrationError_noTargetedImapServersFound");
+      }))
+      .then((totalSteps++, function preProcess() {
+        return Util.promisedTraverseDirectory(this.n4MailDirectory, function (file) {
           if (file.isDirectory())
             return;
           totalSteps++;
         });
       }))
-      .next(function () {
+      .then(function () {
         progressStep();
         that.proceedWithMigration();
       })
-      .next((totalSteps++, function migrateIdentity() {
+      .then((totalSteps++, function migrateIdentity() {
         progressStep();
         temporaryIdentity = Services.accountManager.createIdentity();
         that.migrateIdentity(temporaryIdentity);
       }))
-      .next((totalSteps++, function migrateSmtpServer() {
+      .then((totalSteps++, function migrateSmtpServer() {
         progressStep();
 
         let username = that.getN4Pref(that.PREF_4X_MAIL_SMTP_NAME);
@@ -277,13 +280,13 @@ MessengerMigrator.prototype = {
 
         return smtpServer;
       }))
-      .next((totalSteps++, function setDefaultSmtpServer(smtpServer) {
+      .then((totalSteps++, function setDefaultSmtpServer(smtpServer) {
         progressStep();
         try {
           Services.smtpService.defaultServer = smtpServer;
         } catch (x) {}
       }))
-      .next((totalSteps++, function migrateServer() {
+      .then((totalSteps++, function migrateServer() {
         progressStep();
 
         if (that.m_oldMailType !== that.IMAP_4X_MAIL_TYPE)
@@ -294,25 +297,25 @@ MessengerMigrator.prototype = {
 
         identities = that.migrateImapAccounts(temporaryIdentity);
       }))
-      .next((totalSteps++, function migrateLocalMailAccount() {
+      .then((totalSteps++, function migrateLocalMailAccount() {
         return that.migrateLocalMailAccount(function progressReporter() {
           progressStep();
-        }).error(function (x) {
+        }).catch(function (x) {
           Util.log("Failed to migrate local mail account " + x);
           throw StringBundle.nc4migrator.GetStringFromName("migrationError_failedToMigrateLocalMailAccount");
         });
       }))
-      .next((totalSteps++, function importSpecialFolders() {
+      .then((totalSteps++, function importSpecialFolders() {
         progressStep();
         if (identities && identities.length)
           identities.forEach(that.makeSpecialFolderLocal, that);
       }))
-      .next((totalSteps++, function postProcess() {
+      .then((totalSteps++, function postProcess() {
         progressStep();
         that.overrideSpecifiedPrefs();
         temporaryIdentity.clearAllValues();
       }))
-      .error(function (x) {
+      .catch(function (x) {
         if (temporaryIdentity)
           temporaryIdentity.clearAllValues();
         throw x;
@@ -752,12 +755,12 @@ MessengerMigrator.prototype = {
     let maxSize = this.quotaCalculationMaxSize;
     let totalSize = 0;
     let mailDir = this.n4MailDirectory;
-    return Util.deferredTraverseDirectory(mailDir, function(aFile) {
+    return Util.promisedTraverseDirectory(mailDir, function(aFile) {
              if (!aFile.isDirectory())
                totalSize += aFile.fileSize;
              return maxSize <= 0 || totalSize < maxSize;
            }, timeout)
-             .next(function(aComplete) {
+             .then(function(aComplete) {
                return {
                  size     : totalSize,
                  complete : aComplete
@@ -838,13 +841,13 @@ MessengerMigrator.prototype = {
 
     if (Prefs.get("extensions.nc4migrator.shareOldMailbox", false)) {
       localFoldersServer.localPath = oldMailDir;
-      return Deferred.next(function() {});
+      return Promise.resolve();
     }
 
     Util.log("Now, migrate %s => %s",
              oldMailDir && oldMailDir.path, mailDir && mailDir.path);
 
-    let deferred;
+    let promise;
     if (oldMailDir) {
       // we need to set this to <profile>/Mail/Local Folders, because that's where
       // the 4.x "Local Mail" (when using imap) got copied.
@@ -856,7 +859,7 @@ MessengerMigrator.prototype = {
       accountLocalFolder.append(name);
       accountLocalFolder = Util.getIdenticalFileFor(accountLocalFolder); // name, name-1, name-2, ...
 
-      deferred = LocalFolderMigrator.migrateTo(
+      promise = LocalFolderMigrator.migrateTo(
         oldMailDir,             // Mail
         accountLocalFolder,
         function localMailHandler(fromFile, toFile) {
@@ -897,7 +900,7 @@ MessengerMigrator.prototype = {
     // TODO: Implement this!
     // localFoldersServer.CopyDefaultMessages("Templates", mailDir);
 
-    return (deferred || Deferred).next(function() {});
+    return promise || Promise.resolve();
   },
 
   setSendLaterUriPref: function (server) {
@@ -1088,9 +1091,9 @@ var LocalFolderMigrator = {
     destDir.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0644);
 
     var that = this;
-    return Util.deferredCopyDirectory(
+    return Util.promisedCopyDirectory(
       sourceDir, destDir, fileHandler, onProgress
-    ).next(function () {
+    ).then(function () {
       let actualDestDir = destDir.parent.clone();
       actualDestDir.append(destDir.leafName + ".sbd");
       that.cleanDirectory(actualDestDir);

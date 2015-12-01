@@ -10,11 +10,12 @@
   const Cu = Components.utils;
   const Cr = Components.results;
 
+  const { Promise } = Components.utils.import('resource://gre/modules/Promise.jsm', {});
+
   const { Util } = Cu.import("resource://nc4migrator-modules/Util.js", {});
   const { MigrationManager } = Cu.import('resource://nc4migrator-modules/MigrationManager.js', {});
   const { Services } = Cu.import("resource://nc4migrator-modules/Services.js", {});
   const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
-  const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 
   const { Preferences } = Cu.import("resource://nc4migrator-modules/Preferences.js", {});
   const Prefs = new Preferences("");
@@ -162,7 +163,7 @@
 
       let that = this;
       this.setProfile(this.getSelectedProfile())
-        .next(function() {
+        .then(function() {
           that.enterPhase(that.phase.enterConfirmPage);
           that.header = Messages.getLocalized("confirmation.header", "");
           that.message = Messages.getLocalized("confirmation", "");
@@ -196,14 +197,14 @@
           let percentage = Math.min(100, parseInt(progress * 100));
           elements.migrationProgressMeter.value = percentage;
         })
-        .next(function () {
+        .then(function () {
           that.migrated = true;
           return StringBundle.nc4migrator.formatStringFromName("migrationSuccess", [elements.migrationProfile.value], 1);
         })
-        .error(function (x) {
+        .catch(function (x) {
           return StringBundle.nc4migrator.formatStringFromName("migrationError", [x], 1);
         })
-        .next(function (message) {
+        .then(function (message) {
           elements.migrationResultMessage.textContent = message;
 
           wizard.canAdvance = true;
@@ -316,8 +317,7 @@
 
     setProfile: function (ncProfile) {
       if (!ncProfile) {
-        return Deferred.next(function() {
-        });
+        return Promise.resolve();
       }
 
       let migrator
@@ -335,7 +335,7 @@
       elements.migrationQuotaAndEstimatedTimeRow.hidden = false;
 
       return migrator.getLocalMailFolderQuota()
-              .next(function(aResult) {
+              .then(function(aResult) {
                 var quota = Util.formatBytes(aResult.size).join(" ");
                 var sizeInMB = (aResult.size || 1) / (1024 * 1024);
                 var estimatedTime = Util.formatTime(Math.round(migrator.elapsedTimePer1MB * sizeInMB)).join(" ");
@@ -352,7 +352,7 @@
                 elements.migrationEstimatedTimeRow.hidden = false;
                 elements.migrationQuotaAndEstimatedTimeRow.hidden = true;
               })
-              .error(function(x) {
+              .catch(function(x) {
                 Util.alert(x);
               });
     },

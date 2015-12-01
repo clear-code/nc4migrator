@@ -9,8 +9,10 @@ const Ci = Components.interfaces;
 const Cu = Components.utils;
 const Cr = Components.results;
 
+Cu.import('resource://gre/modules/Timer.jsm');
+Cu.import('resource://gre/modules/Promise.jsm');
+
 const { Browser } = Cu.import('resource://nc4migrator-modules/Browser.js', {});
-const { Deferred } = Cu.import('resource://nc4migrator-modules/jsdeferred.js', {});
 const { NetUtil } = Cu.import("resource://gre/modules/NetUtil.jsm", {});
 const { StringBundle } = Cu.import("resource://nc4migrator-modules/StringBundle.js", {});
 
@@ -132,7 +134,7 @@ var Util = {
     });
   },
 
-  deferredCopyFile: function (fromFile, toFile, fileHandler) {
+  promisedCopyFile: function (fromFile, toFile, fileHandler) {
     if (typeof fileHandler === "function") {
       try {
         let transformed = fileHandler(fromFile, toFile);
@@ -141,32 +143,30 @@ var Util = {
       } catch (x) {
         if (x instanceof this.SkipFile) {
           Util.log("skipped: "+fromFile.path);
-          return Deferred.next(function() {
-              return true;
-            });
+          return Promise.resolve(true);
         } else {
-          Util.log("deferredCopyFile: " + x);
+          Util.log("promisedCopyFile: " + x);
         }
       }
     }
 
-    var deferred = new Deferred();
-    Util.copyFileAsync(fromFile, toFile, function (succeeded) {
-      deferred.call(succeeded);
+    return new Promise(function(aResolve, aReject) {
+      Util.copyFileAsync(fromFile, toFile, function (succeeded) {
+        aResolve(succeeded);
+      });
     });
-    return deferred;
   },
 
-  deferredCopyDirectory: function (fromDir, toDir, fileHandler, onProgress) {
-    return Deferred.next(function () {
-      var deferreds = [];
+  promisedCopyDirectory: function (fromDir, toDir, fileHandler, onProgress) {
+    return new Promise(function (aResolve, aReject) {
+      var promises = [];
       var entries = fromDir.directoryEntries;
 
       if (typeof onProgress === "function") {
         try {
           onProgress();
         } catch (x) {
-          Util.log("deferredCopyDirectory: onProgress: " + x);
+          Util.log("promisedCopyDirectory: onProgress: " + x);
         }
       }
 
@@ -178,11 +178,9 @@ var Util = {
         } catch (x) {
           if (x instanceof this.SkipFile) {
             Util.log("skipped: "+fromDir.path);
-            return Deferred.next(function() {
-              return true;
-            });
+            return aResolve(true);
           } else {
-            Util.log("deferredCopyDirectory: " + x);
+            Util.log("promisedCopyDirectory: " + x);
           }
         }
       }
@@ -194,27 +192,18 @@ var Util = {
         let nextFromFile = entries.getNext().QueryInterface(Ci.nsIFile);
         let nextToFile   = let (cloned = toDir.clone()) (cloned.append(nextFromFile.leafName), cloned);
         if (nextFromFile.isDirectory())
-          deferreds.push(Util.deferredCopyDirectory(nextFromFile, nextToFile, fileHandler));
+          promises.push(Util.promisedCopyDirectory(nextFromFile, nextToFile, fileHandler));
         else
-          deferreds.push(Util.deferredCopyFile(nextFromFile, nextToFile, fileHandler));
+          promises.push(Util.promisedCopyFile(nextFromFile, nextToFile, fileHandler));
       }
 
-      if (!deferreds.length)
-        return Deferred.next(function() {
-          return true;
-        });
+      if (!promises.length)
+        return aResolve(true);
 
-      var deferred = new Deferred();
-      // Call Util.deferredCopyDirectory() and Util.deferredCopyFile() asynchronously
-      Deferred.parallel(deferreds).next(function (results) {
-        // Because results and deferreds have different global object,
-        // jsdeferred doesn't set "length" property of results.
-        // We have to set results.length explicitly.
-        results.length = deferreds.length;
-        deferred.call(Array.every(results, function (result) result));
+      // Call Util.promisedCopyDirectory() and Util.promisedCopyFile() asynchronously
+      Promise.all(promises).then(function (results) {
+        aResolve(Array.every(results, function (result) { return result; }));
       });
-
-      return deferred;
     });
   },
   SkipFile : function() {
@@ -293,58 +282,55 @@ var Util = {
     }
   },
 
-  deferredTraverseDirectory: function (directory, visitor, timeout) {
+  promisedTraverseDirectory: function (directory, visitor, timeout) {
     if (!directory)
-      return Deferred.next(function() {
-               return true;
-             });
+      return Promise.resolve(true);
 
-    return Deferred.next(function() {
-             var result;
-             try {
-               result = visitor(directory);
-             } catch (x) {
-               Util.log("deferredTraverseDirectory: " + x);
-             }
+    return new Promise(function(aResolve, aReject) {
+      var result;
+      try {
+        result = visitor(directory);
+      } catch (x) {
+        Util.log("promisedTraverseDirectory: " + x);
+      }
 
-             if (result === false)
-               return false;
+      if (result === false)
+        return aResolve(false);
 
-             try{
-               if (!directory.isDirectory())
-                 return result;
+      try{
+        if (!directory.isDirectory())
+          return aResolve(result);
 
-               var deferreds = [];
-               var entries = directory.directoryEntries;
-             } catch (x) {
-               Util.log("deferredTraverseDirectory: " + x);
-               return result;
-             }
+        var promises = [];
+        var entries = directory.directoryEntries;
+      } catch (x) {
+        Util.log("promisedTraverseDirectory: " + x);
+        return aResolve(result);
+      }
 
-             while (entries.hasMoreElements()) {
-               let nextDir = entries.getNext().QueryInterface(Ci.nsIFile);
-               deferreds.push(Util.deferredTraverseDirectory(nextDir, visitor));
-             }
-             if (!deferreds.length)
-               return result;
+      while (entries.hasMoreElements()) {
+        let nextDir = entries.getNext().QueryInterface(Ci.nsIFile);
+        promises.push(Util.promisedTraverseDirectory(nextDir, visitor));
+      }
+      if (!promises.length)
+        return aResolve(result);
 
-             var deferred = new Deferred();
-             var timer;
-             var traversing = Deferred.parallel(deferreds)
-                                .next(function(results) {
-                                  if (timer) timer.cancel();
-                                  results.length = deferreds.length;
-                                  deferred.call(Array.every(results, function(result) result ));
-                                });
-             if (timeout) {
-               timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-               timer.initWithCallback(function() {
-                 if (traversing) traversing.cancel();
-                 deferred.call(false);
-               }, timeout, timer.TYPE_ONE_SHOT);
-             }
-             return deferred;
-           });
+      var timer;
+      var canceled;
+      Promise.all(promises)
+        .then(function(results) {
+          if (canceled) return;
+          if (timer) timer.cancel();
+          aResolve(Array.every(results, function(result) { return result; }));
+        });
+      if (timeout) {
+        timer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+        timer.initWithCallback(function() {
+          canceled = true;
+          aResolve(false);
+        }, timeout, timer.TYPE_ONE_SHOT);
+      }
+    });
   },
 
   // getQuota: function () {
@@ -531,68 +517,18 @@ var Util = {
 
     let getDiskSpace = this.getDiskSpace;
 
-    if (!getDiskSpace)
-      return this.getDiskQuotaLegacy(targetDirectory);
-
     let tryCount = 0;
     const tryCountMax = 42;
-    return Deferred.next(function tryGetDiskSpace() {
-      tryCount++;
-      let size = getDiskSpace(targetDirectory);
-      return size < 0 && tryCount < tryCountMax ? Deferred.wait(0.3).next(tryGetDiskSpace) : size;
+    return new Promise(function(aResolve, aReject) {
+      var tryGetDiskSpace = function tryGetDiskSpace() {
+        tryCount++;
+        let size = getDiskSpace(targetDirectory);
+        if (size < 0 && tryCount < tryCountMax)
+          setTimeout(tryGetDiskSpace, 300);
+        else
+          aResolve(size);
+      };
     });
-  },
-
-  // legacy version for Gecko 1.9.2 or olders
-  getDiskQuotaLegacy: function (targetDirectory) {
-    let tmpFile = Util.getSpecialDirectory("TmpD");
-    tmpFile.append(Util.generateUUID());
-    if (tmpFile.exists())
-      tmpFile.remove(true);
-
-    let args = [targetDirectory.path, tmpFile.path];
-    let process = Util.launchProcess(Util.diskFreeCommand, args);
-
-    return Deferred
-      .wait(0.1)
-      .next(function tryToGetResult() {
-        if (!tmpFile.exists())
-          return Deferred.wait(0.1).next(tryToGetResult);
-      })
-      .next(function () {
-        let tryCount = 0;
-        return Deferred.next(function tryToParseResult() {
-          tryCount++;
-          let resultString = Util.readFile(tmpFile, {
-            charset: "shift_jis"
-          });
-          let matchResult = resultString.match(/:[ \t]*([0-9]+)/);
-          if (!matchResult) {
-            if (tryCount < 50)
-              return Deferred.wait(0.1).next(tryToParseResult);
-          }
-          let [, quotaString] = matchResult;
-          return Number(quotaString);
-        });
-      })
-      .next(function (quota) {
-        let tryCount = 0;
-        Deferred.next(function tryRemoveTempFile() {
-          tryCount++;
-          try {
-            tmpFile.remove(true);
-          } catch([]) {
-            if (tryCount < 50)
-              Deferred.wait(0.1).next(tryRemoveTempFile);
-          }
-        });
-
-        return quota;
-      })
-      .error(function (error) {
-        Util.log(error);
-        return 0;
-      });
   },
 
   restartApplication: function () {
